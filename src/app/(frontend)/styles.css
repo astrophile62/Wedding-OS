@@ -1,0 +1,111 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ivory: #f8f4ec;
+  --color-sand: #eee7da;
+  --color-sage-light: #e7ece4;
+  --color-sage: #71806a;
+  --color-sage-deep: #435142;
+  --color-gold: #a58758;
+  --color-gold-soft: #d2b987;
+  --color-charcoal: #34332f;
+  --color-stone: #77736b;
+  --color-ink: #171b1a;
+  --color-dashboard: #f6f7f8;
+  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-inter);
+}
+
+@layer base {
+  * {
+    border-color: rgb(52 51 47 / 12%);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-sans), sans-serif;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    outline-offset: 3px;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  ::selection {
+    background: var(--color-sage);
+    color: var(--color-ivory);
+  }
+}
+
+.font-serif {
+  font-family: var(--font-serif), serif;
+}
+
+.music-pulse {
+  animation: music-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes music-pulse {
+  0%,
+  100% {
+    box-shadow: 0 12px 30px rgb(67 81 66 / 22%);
+  }
+  50% {
+    box-shadow:
+      0 12px 30px rgb(67 81 66 / 22%),
+      0 0 0 8px rgb(113 128 106 / 12%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.figma-custom-code-fragment {
+  display: contents;
+}
+
+.figma-bypass-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 2147483647;
+  transform: translateY(-150%);
+  border-radius: 6px;
+  background: #111827;
+  color: #fff;
+  padding: 8px 12px;
+  font:
+    600 14px/1.2 system-ui,
+    sans-serif;
+  text-decoration: none;
+}
+
+.figma-bypass-link:focus {
+  transform: translateY(0);
+}
