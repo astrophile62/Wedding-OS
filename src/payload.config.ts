@@ -1,8 +1,12 @@
 import path from 'path'
-import { buildFigmaConfig } from '@payloadcms/figma'
-import { mcpPlugin } from '@payloadcms/plugin-mcp'
-import { en as adminLanguage } from '@payloadcms/translations/languages/en'
 import { fileURLToPath } from 'url'
+import { buildConfig } from 'payload'
+// import sharp from 'sharp'
+import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { vercelPostgresAdapter } from '@payloadcms/db-vercel-postgres'
+import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
+import { en as adminLanguage } from '@payloadcms/translations/languages/en'
+
 import { Admins } from './collections/Admins'
 import { Media } from './collections/Media'
 import { Folders } from './collections/Folders'
@@ -15,7 +19,7 @@ import { WeddingSettings } from './globals/WeddingSettings'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-export default buildFigmaConfig({
+export default buildConfig({
   admin: {
     user: Admins.slug,
     constrainWidth: true,
@@ -36,6 +40,12 @@ export default buildFigmaConfig({
   },
   collections: [Admins, Media, Folders, Tags, Guests, RSVPs, GalleryItems],
   globals: [WeddingSettings],
+  editor: lexicalEditor(),
+  secret: process.env.PAYLOAD_SECRET || '',
+  db: vercelPostgresAdapter({
+    pool: { connectionString: process.env.POSTGRES_URL || '' },
+  }),
+  // sharp,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
@@ -44,6 +54,16 @@ export default buildFigmaConfig({
     fallback: true,
     defaultLocale: 'en',
   },
-  plugins: [mcpPlugin({})],
-  figma: {},
+  plugins: [
+    // Media di Vercel Blob hanya aktif jika token ada (di Vercel).
+    // Di laptop tanpa token, upload disimpan lokal untuk pengembangan.
+    ...(process.env.BLOB_READ_WRITE_TOKEN
+      ? [
+          vercelBlobStorage({
+            collections: { media: true },
+            token: process.env.BLOB_READ_WRITE_TOKEN,
+          }),
+        ]
+      : []),
+  ],
 })

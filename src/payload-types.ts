@@ -108,7 +108,7 @@ export interface Config {
     'payload-llm-instructions': PayloadLlmInstructionsSelect<false> | PayloadLlmInstructionsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
   fallbackLocale: ('false' | 'none' | 'null') | false | null | 'en' | 'en'[];
   globals: {
@@ -154,22 +154,33 @@ export interface AdminAuthOperations {
  * via the `definition` "admins".
  */
 export interface Admin {
-  id: string;
-  figmaHandle?: string | null;
-  figmaImageUrl?: string | null;
-  userGroups?: string[] | null;
-  makePermission?: ('view' | 'edit') | null;
-  email?: string | null;
+  id: number;
   createdBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedAt: string;
   createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
   collection: 'admins';
 }
 /**
@@ -177,19 +188,17 @@ export interface Admin {
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
+  id: number;
   alt: string;
-  _h_folders?: (string | null) | Folder;
-  _h_tags?: (string | Tag)[] | null;
-  prefix?: string | null;
-  _objectKey?: string | null;
+  _h_folders?: (number | null) | Folder;
+  _h_tags?: (number | Tag)[] | null;
   createdBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedAt: string;
   createdAt: string;
@@ -218,16 +227,16 @@ export interface Media {
  * via the `definition` "folders".
  */
 export interface Folder {
-  id: string;
-  _h_folders?: (string | null) | Folder;
+  id: number;
+  _h_folders?: (number | null) | Folder;
   name: string;
   createdBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedAt: string;
   createdAt: string;
@@ -239,16 +248,16 @@ export interface Folder {
  * via the `definition` "tags".
  */
 export interface Tag {
-  id: string;
-  _h_tags?: (string | null) | Tag;
+  id: number;
+  _h_tags?: (number | null) | Tag;
   name: string;
   createdBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedAt: string;
   createdAt: string;
@@ -260,7 +269,7 @@ export interface Tag {
  * via the `definition` "guests".
  */
 export interface Guest {
-  id: string;
+  id: number;
   name: string;
   slug: string;
   partnerLabel?: string | null;
@@ -268,11 +277,11 @@ export interface Guest {
   invitationStatus: 'draft' | 'sent' | 'opened';
   createdBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedAt: string;
   createdAt: string;
@@ -282,8 +291,8 @@ export interface Guest {
  * via the `definition` "rsvps".
  */
 export interface Rsvp {
-  id: string;
-  guest: string | Guest;
+  id: number;
+  guest: number | Guest;
   guestName: string;
   attendance: 'attending' | 'declined';
   guestCount: number;
@@ -291,11 +300,11 @@ export interface Rsvp {
   approved?: boolean | null;
   createdBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedAt: string;
   createdAt: string;
@@ -305,18 +314,18 @@ export interface Rsvp {
  * via the `definition` "gallery-items".
  */
 export interface GalleryItem {
-  id: string;
-  image: string | Media;
+  id: number;
+  image: number | Media;
   caption: string;
   role: 'cover' | 'bride' | 'groom' | 'story' | 'gallery';
   order: number;
   createdBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedAt: string;
   createdAt: string;
@@ -326,7 +335,7 @@ export interface GalleryItem {
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -343,40 +352,40 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
       } | null)
     | ({
         relationTo: 'folders';
-        value: string | Folder;
+        value: number | Folder;
       } | null)
     | ({
         relationTo: 'tags';
-        value: string | Tag;
+        value: number | Tag;
       } | null)
     | ({
         relationTo: 'guests';
-        value: string | Guest;
+        value: number | Guest;
       } | null)
     | ({
         relationTo: 'rsvps';
-        value: string | Rsvp;
+        value: number | Rsvp;
       } | null)
     | ({
         relationTo: 'gallery-items';
-        value: string | GalleryItem;
+        value: number | GalleryItem;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   };
   updatedAt: string;
   createdAt: string;
@@ -386,10 +395,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   };
   key?: string | null;
   value?:
@@ -409,7 +418,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -428,11 +437,11 @@ export interface PayloadLlmInstruction {
   systemInstructions?: LexicalRichText<LexicalNodes_3DE324E4> | null;
   createdBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedAt: string;
   createdAt: string;
@@ -442,15 +451,25 @@ export interface PayloadLlmInstruction {
  * via the `definition` "admins_select".
  */
 export interface AdminsSelect<T extends boolean = true> {
-  figmaHandle?: T;
-  figmaImageUrl?: T;
-  userGroups?: T;
-  makePermission?: T;
-  email?: T;
   createdBy?: T;
   updatedBy?: T;
   updatedAt?: T;
   createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  resetPasswordRequestedAt?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -460,8 +479,6 @@ export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   _h_folders?: T;
   _h_tags?: T;
-  prefix?: T;
-  _objectKey?: T;
   createdBy?: T;
   updatedBy?: T;
   updatedAt?: T;
@@ -622,7 +639,7 @@ export interface PayloadLlmInstructionsSelect<T extends boolean = true> {
  * via the `definition` "wedding-settings".
  */
 export interface WeddingSetting {
-  id: string;
+  id: number;
   brideName: string;
   groomName: string;
   hashtag: string;
@@ -664,11 +681,11 @@ export interface WeddingSetting {
     | null;
   createdBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedBy?: {
     relationTo: 'admins';
-    value: string | Admin;
+    value: number | Admin;
   } | null;
   updatedAt?: string | null;
   createdAt?: string | null;
