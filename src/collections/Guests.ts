@@ -50,6 +50,7 @@ const generateSlug: CollectionBeforeValidateHook = async ({ data, operation, req
 
 export const Guests: CollectionConfig = {
   slug: 'guests',
+  versions: false,
   access: {
     create: isAdmin,
     delete: isAdmin,

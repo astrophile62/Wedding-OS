@@ -5,6 +5,7 @@ const isAdmin: Access = ({ req }) => req.user?.collection === 'admins'
 
 export const RSVPs: CollectionConfig = {
   slug: 'rsvps',
+  versions: false,
   access: {
     create: isAdmin,
     delete: isAdmin,

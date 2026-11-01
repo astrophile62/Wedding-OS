@@ -416,7 +416,7 @@ export default function WeddingExperience({
           <div className="mx-auto grid max-w-3xl gap-5 md:grid-cols-2">
             {[
               { title: 'Akad Nikah', time: '08.00 WIB — Selesai' },
-              { title: 'Resepsi', time: '11.00 — 14.00 WIB' },
+              { title: 'Resepsi', time: '11.00 — 13.00 WIB' },
             ].map((event) => (
               <article
                 key={event.title}

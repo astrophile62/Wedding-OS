@@ -4,6 +4,7 @@ const isAdmin: Access = ({ req }) => req.user?.collection === 'admins'
 
 export const GuestMessages: CollectionConfig = {
   slug: 'guest-messages',
+  versions: false,
   access: {
     create: isAdmin,
     delete: isAdmin,

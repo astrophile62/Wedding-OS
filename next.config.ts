@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
   },
   // TODO: matikan setelah build bersih (langkah terpisah)
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   enablePrerenderSourceMaps: false,
   experimental: {

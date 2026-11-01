@@ -4,6 +4,7 @@ const noAccess = () => false
 
 export const RateLimits: CollectionConfig = {
   slug: 'rate-limits',
+  versions: false,
   access: {
     create: noAccess,
     update: noAccess,
