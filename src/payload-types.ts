@@ -87,6 +87,7 @@ export interface Config {
     rsvps: Rsvp;
     'guest-messages': GuestMessage;
     'gallery-items': GalleryItem;
+    'rate-limits': RateLimit;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -103,6 +104,7 @@ export interface Config {
     rsvps: RsvpsSelect<false> | RsvpsSelect<true>;
     'guest-messages': GuestMessagesSelect<false> | GuestMessagesSelect<true>;
     'gallery-items': GalleryItemsSelect<false> | GalleryItemsSelect<true>;
+    'rate-limits': RateLimitsSelect<false> | RateLimitsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -390,6 +392,26 @@ export interface GalleryItem {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rate-limits".
+ */
+export interface RateLimit {
+  id: number;
+  key: string;
+  count: number;
+  windowStart: string;
+  createdBy?: {
+    relationTo: 'admins';
+    value: number | Admin;
+  } | null;
+  updatedBy?: {
+    relationTo: 'admins';
+    value: number | Admin;
+  } | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -443,6 +465,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'gallery-items';
         value: number | GalleryItem;
+      } | null)
+    | ({
+        relationTo: 'rate-limits';
+        value: number | RateLimit;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -661,6 +687,19 @@ export interface GalleryItemsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rate-limits_select".
+ */
+export interface RateLimitsSelect<T extends boolean = true> {
+  key?: T;
+  count?: T;
+  windowStart?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -853,7 +892,7 @@ export interface CollectionQueryWidget {
   data?: {
     title?: string | null;
     relatedCollection:
-      'admins' | 'media' | 'folders' | 'tags' | 'guests' | 'rsvps' | 'guest-messages' | 'gallery-items';
+      'admins' | 'media' | 'folders' | 'tags' | 'guests' | 'rsvps' | 'guest-messages' | 'gallery-items' | 'rate-limits';
     where?:
       | {
           [k: string]: unknown;
@@ -876,7 +915,18 @@ export interface CollectionQueryWidget {
 export interface ActivityWidget {
   data?: {
     excludedCollections?:
-      ('admins' | 'media' | 'folders' | 'tags' | 'guests' | 'rsvps' | 'guest-messages' | 'gallery-items')[] | null;
+      | (
+          | 'admins'
+          | 'media'
+          | 'folders'
+          | 'tags'
+          | 'guests'
+          | 'rsvps'
+          | 'guest-messages'
+          | 'gallery-items'
+          | 'rate-limits'
+        )[]
+      | null;
   };
   width: 'small' | 'medium' | 'large' | 'x-large' | 'full';
 }

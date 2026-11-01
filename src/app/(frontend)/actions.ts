@@ -3,6 +3,7 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import type { Where } from 'payload'
+import { checkRateLimit, clientFingerprint } from '@/lib/rate-limit'
 
 export type RSVPState = {
   success: boolean
@@ -34,6 +35,15 @@ export async function submitRSVP(
 
   try {
     const payload = await getPayload({ config })
+        const fingerprint = await clientFingerprint()
+    const ipAllowed = await checkRateLimit(payload, fingerprint, {
+      action: 'rsvp-ip',
+      limit: 30,
+      windowSeconds: 600,
+    })
+    if (!ipAllowed) {
+      return { success: false, message: 'Terlalu banyak percobaan. Silakan coba lagi beberapa menit lagi.' }
+    }
 
     const found = await payload.find({
       collection: 'guests',
@@ -45,6 +55,14 @@ export async function submitRSVP(
     const guest = found.docs[0]
     if (!guest) {
       return { success: false, message: 'Undangan tidak ditemukan. Mohon buka tautan undangan Anda.' }
+    }
+    const slugAllowed = await checkRateLimit(payload, slug, {
+      action: 'rsvp-slug',
+      limit: guest.invitationType === 'group' ? 150 : 15,
+      windowSeconds: 600,
+    })
+    if (!slugAllowed) {
+      return { success: false, message: 'Terlalu banyak percobaan. Silakan coba lagi beberapa menit lagi.' }
     }
 
     const isGroup = guest.invitationType === 'group'

@@ -7,6 +7,7 @@ import { vercelPostgresAdapter } from '@payloadcms/db-vercel-postgres'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import { en as adminLanguage } from '@payloadcms/translations/languages/en'
 
+
 import { Admins } from './collections/Admins'
 import { Media } from './collections/Media'
 import { Folders } from './collections/Folders'
@@ -16,6 +17,7 @@ import { RSVPs } from './collections/RSVPs'
 import { GalleryItems } from './collections/GalleryItems'
 import { GuestMessages } from './collections/GuestMessages'
 import { WeddingSettings } from './globals/WeddingSettings'
+import { RateLimits } from './collections/RateLimits'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -39,7 +41,7 @@ export default buildConfig({
     fallbackLanguage: 'en',
     supportedLanguages: { en: adminLanguage },
   },
-  collections: [Admins, Media, Folders, Tags, Guests, RSVPs, GuestMessages, GalleryItems],
+  collections: [Admins, Media, Folders, Tags, Guests, RSVPs, GuestMessages, GalleryItems, RateLimits],
   globals: [WeddingSettings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
