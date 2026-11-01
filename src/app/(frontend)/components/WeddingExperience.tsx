@@ -53,6 +53,7 @@ type Guest = {
   name: string
   partnerLabel: string
   maxGuests: number
+  invitationType: 'personal' | 'group'
 }
 
 const initialRSVPState: RSVPState = { success: false, message: '' }
@@ -473,14 +474,47 @@ export default function WeddingExperience({
             action={formAction}
             className="mx-auto max-w-xl rounded-[2rem] border border-charcoal/10 bg-ivory p-6 shadow-[0_24px_70px_rgba(56,52,45,0.08)] md:p-10"
           >
-            <input type="hidden" name="guestId" value={guest?.id || ''} />
-            <input type="hidden" name="guestName" value={guest?.name || ''} />
-            <label className="mb-2 block text-[0.6rem] font-semibold tracking-[0.16em] text-stone uppercase">
-              Nama Tamu
-            </label>
-            <div className="mb-6 flex min-h-14 items-center rounded-xl border border-charcoal/15 bg-white/40 px-4 font-serif text-lg">
-              {guest?.name || 'Tamu Undangan'}
-            </div>
+                        <input type="hidden" name="guestId" value={guest?.id || ''} />
+            {/* Kolom jebakan bot: tidak terlihat dan tidak bisa difokus oleh manusia */}
+            <input
+              type="text"
+              name="hp_catatan"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="sr-only"
+            />
+            {guest?.invitationType === 'group' ? (
+              <>
+                <label
+                  htmlFor="rsvp-name"
+                  className="mb-2 block text-[0.6rem] font-semibold tracking-[0.16em] text-stone uppercase"
+                >
+                  Nama Anda
+                </label>
+                <input
+                  id="rsvp-name"
+                  type="text"
+                  name="guestName"
+                  required
+                  minLength={2}
+                  maxLength={80}
+                  autoComplete="name"
+                  placeholder="Tulis nama lengkap Anda"
+                  className="mb-6 min-h-14 w-full rounded-xl border border-charcoal/15 bg-white/40 px-4 font-serif text-lg outline-none placeholder:text-stone/55 focus:border-sage"
+                />
+              </>
+            ) : (
+              <>
+                <input type="hidden" name="guestName" value={guest?.name || ''} />
+                <label className="mb-2 block text-[0.6rem] font-semibold tracking-[0.16em] text-stone uppercase">
+                  Nama Tamu
+                </label>
+                <div className="mb-6 flex min-h-14 items-center rounded-xl border border-charcoal/15 bg-white/40 px-4 font-serif text-lg">
+                  {guest?.name || 'Tamu Undangan'}
+                </div>
+              </>
+            )}
             <fieldset className="mb-6">
               <legend className="mb-3 text-[0.6rem] font-semibold tracking-[0.16em] text-stone uppercase">
                 Konfirmasi Kehadiran

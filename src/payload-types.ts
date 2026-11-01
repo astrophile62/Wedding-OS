@@ -85,6 +85,7 @@ export interface Config {
     tags: Tag;
     guests: Guest;
     rsvps: Rsvp;
+    'guest-messages': GuestMessage;
     'gallery-items': GalleryItem;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -100,6 +101,7 @@ export interface Config {
     tags: TagsSelect<false> | TagsSelect<true>;
     guests: GuestsSelect<false> | GuestsSelect<true>;
     rsvps: RsvpsSelect<false> | RsvpsSelect<true>;
+    'guest-messages': GuestMessagesSelect<false> | GuestMessagesSelect<true>;
     'gallery-items': GalleryItemsSelect<false> | GalleryItemsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -192,6 +194,8 @@ export interface Media {
   alt: string;
   _h_folders?: (number | null) | Folder;
   _h_tags?: (number | Tag)[] | null;
+  prefix?: string | null;
+  _objectKey?: string | null;
   createdBy?: {
     relationTo: 'admins';
     value: number | Admin;
@@ -270,10 +274,36 @@ export interface Tag {
  */
 export interface Guest {
   id: number;
+  invitationType: 'personal' | 'group';
+  /**
+   * Nama tamu, atau nama grup (mis. "Grup Dhira Janitra"). Tampil di sapaan.
+   */
   name: string;
-  slug: string;
+  /**
+   * Nama pasangan. Kosongkan jika tidak ada.
+   */
+  partnerName?: string | null;
+  /**
+   * Dipakai di sapaan hanya jika "Nama partner" kosong.
+   */
   partnerLabel?: string | null;
+  /**
+   * Perorangan: jumlah maksimal tamu yang boleh hadir. Grup RSVP terbuka: maksimal per satu pengisian.
+   */
   maxGuests: number;
+  /**
+   * Batas jumlah RSVP yang bisa masuk lewat tautan grup ini (pengaman dari spam).
+   */
+  maxResponses?: number | null;
+  /**
+   * Boleh dikosongkan. Perorangan: nama + kode acak. Grup: nama yang mudah dibaca (bisa diketik sendiri, mis. "dhira-janitra"). Tidak bisa diubah setelah dibuat. Tautan: /invite/<slug>.
+   */
+  slug?: string | null;
+  contact?: string | null;
+  /**
+   * Kategori untuk pengelompokan di admin (mis. keluarga, kantor, kuliah).
+   */
+  guestGroup?: string | null;
   invitationStatus: 'draft' | 'sent' | 'opened';
   createdBy?: {
     relationTo: 'admins';
@@ -292,12 +322,40 @@ export interface Guest {
  */
 export interface Rsvp {
   id: number;
+  /**
+   * Undangan (perorangan atau grup) yang menerima konfirmasi ini.
+   */
   guest: number | Guest;
+  /**
+   * Nama yang mengisi RSVP (untuk grup: nama yang diketik pengunjung).
+   */
   guestName: string;
   attendance: 'attending' | 'declined';
+  /**
+   * Otomatis 0 jika tidak hadir.
+   */
   guestCount: number;
-  message?: string | null;
-  approved?: boolean | null;
+  createdBy?: {
+    relationTo: 'admins';
+    value: number | Admin;
+  } | null;
+  updatedBy?: {
+    relationTo: 'admins';
+    value: number | Admin;
+  } | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "guest-messages".
+ */
+export interface GuestMessage {
+  id: number;
+  guest?: (number | null) | Guest;
+  guestName: string;
+  message: string;
+  status: 'pending' | 'approved' | 'hidden';
   createdBy?: {
     relationTo: 'admins';
     value: number | Admin;
@@ -377,6 +435,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'rsvps';
         value: number | Rsvp;
+      } | null)
+    | ({
+        relationTo: 'guest-messages';
+        value: number | GuestMessage;
       } | null)
     | ({
         relationTo: 'gallery-items';
@@ -479,6 +541,8 @@ export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   _h_folders?: T;
   _h_tags?: T;
+  prefix?: T;
+  _objectKey?: T;
   createdBy?: T;
   updatedBy?: T;
   updatedAt?: T;
@@ -538,10 +602,15 @@ export interface TagsSelect<T extends boolean = true> {
  * via the `definition` "guests_select".
  */
 export interface GuestsSelect<T extends boolean = true> {
+  invitationType?: T;
   name?: T;
-  slug?: T;
+  partnerName?: T;
   partnerLabel?: T;
   maxGuests?: T;
+  maxResponses?: T;
+  slug?: T;
+  contact?: T;
+  guestGroup?: T;
   invitationStatus?: T;
   createdBy?: T;
   updatedBy?: T;
@@ -557,8 +626,20 @@ export interface RsvpsSelect<T extends boolean = true> {
   guestName?: T;
   attendance?: T;
   guestCount?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "guest-messages_select".
+ */
+export interface GuestMessagesSelect<T extends boolean = true> {
+  guest?: T;
+  guestName?: T;
   message?: T;
-  approved?: T;
+  status?: T;
   createdBy?: T;
   updatedBy?: T;
   updatedAt?: T;
@@ -771,7 +852,8 @@ export interface CollectionsWidget {
 export interface CollectionQueryWidget {
   data?: {
     title?: string | null;
-    relatedCollection: 'admins' | 'media' | 'folders' | 'tags' | 'guests' | 'rsvps' | 'gallery-items';
+    relatedCollection:
+      'admins' | 'media' | 'folders' | 'tags' | 'guests' | 'rsvps' | 'guest-messages' | 'gallery-items';
     where?:
       | {
           [k: string]: unknown;
@@ -793,7 +875,8 @@ export interface CollectionQueryWidget {
  */
 export interface ActivityWidget {
   data?: {
-    excludedCollections?: ('admins' | 'media' | 'folders' | 'tags' | 'guests' | 'rsvps' | 'gallery-items')[] | null;
+    excludedCollections?:
+      ('admins' | 'media' | 'folders' | 'tags' | 'guests' | 'rsvps' | 'guest-messages' | 'gallery-items')[] | null;
   };
   width: 'small' | 'medium' | 'large' | 'x-large' | 'full';
 }

@@ -14,6 +14,7 @@ import { Tags } from './collections/Tags'
 import { Guests } from './collections/Guests'
 import { RSVPs } from './collections/RSVPs'
 import { GalleryItems } from './collections/GalleryItems'
+import { GuestMessages } from './collections/GuestMessages'
 import { WeddingSettings } from './globals/WeddingSettings'
 
 const filename = fileURLToPath(import.meta.url)
@@ -38,7 +39,7 @@ export default buildConfig({
     fallbackLanguage: 'en',
     supportedLanguages: { en: adminLanguage },
   },
-  collections: [Admins, Media, Folders, Tags, Guests, RSVPs, GalleryItems],
+  collections: [Admins, Media, Folders, Tags, Guests, RSVPs, GuestMessages, GalleryItems],
   globals: [WeddingSettings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
@@ -54,16 +55,12 @@ export default buildConfig({
     fallback: true,
     defaultLocale: 'en',
   },
-  plugins: [
-    // Media di Vercel Blob hanya aktif jika token ada (di Vercel).
-    // Di laptop tanpa token, upload disimpan lokal untuk pengembangan.
-    ...(process.env.BLOB_READ_WRITE_TOKEN
-      ? [
-          vercelBlobStorage({
-            collections: { media: true },
-            token: process.env.BLOB_READ_WRITE_TOKEN,
-          }),
-        ]
-      : []),
+    storage: [
+    vercelBlobStorage({
+      enabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
+      collections: { media: true },
+      token: process.env.BLOB_READ_WRITE_TOKEN || '',
+      clientUploads: true,
+    }),
   ],
 })

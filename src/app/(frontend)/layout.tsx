@@ -28,8 +28,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title,
   description,
-  robots: makeSiteSettings.robots?.index === false ? { follow: false, index: false } : undefined,
-  icons: favicon ? { icon: favicon } : undefined,
+   robots: { follow: false, index: false },
+   icons: favicon ? { icon: favicon } : undefined,
   openGraph: {
     title,
     description,
