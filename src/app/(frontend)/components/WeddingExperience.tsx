@@ -205,7 +205,17 @@ export default function WeddingExperience({
   const cover = getMedia(byRole.cover)
   const bride = getMedia(byRole.bride)
   const groom = getMedia(byRole.groom)
-  const eventDate = new Date(settings.weddingDate || '2026-08-22T01:00:00.000Z')
+  const eventDate = new Date(settings.weddingDate || '2026-12-26T01:00:00.000Z')
+    const dateParts = (options: Intl.DateTimeFormatOptions) =>
+    Object.fromEntries(
+      new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', ...options })
+        .formatToParts(eventDate)
+        .map((part): [string, string] => [part.type, part.value]),
+    )
+  const numericDate = dateParts({ day: '2-digit', month: '2-digit', year: 'numeric' })
+  const longDate = dateParts({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const coverDateText = `${numericDate.day} · ${numericDate.month} · ${numericDate.year}`
+  const longDateText = `${longDate.weekday} · ${longDate.day} ${longDate.month} ${longDate.year}`
 
   const countdown = useMemo(() => {
     const diff = Math.max(0, eventDate.getTime() - Date.now())
@@ -259,7 +269,7 @@ export default function WeddingExperience({
             <span className="h-px w-8 bg-ivory/50" />
           </div>
           <div>
-            <p className="mb-5 text-[0.66rem] tracking-[0.25em] uppercase">22 · 08 · 2026</p>
+            <p className="mb-5 text-[0.66rem] tracking-[0.25em] uppercase">{coverDateText}</p>
             <h1 className="font-serif text-6xl leading-[0.88] font-medium">
               {settings.brideName || 'Dina'}
               <span className="my-3 block font-serif text-3xl font-normal italic text-gold-soft">
@@ -414,7 +424,7 @@ export default function WeddingExperience({
               >
                 <Icon name="calendar" className="mx-auto size-6 text-gold-soft" />
                 <p className="mt-5 text-[0.58rem] tracking-[0.24em] text-ivory/55 uppercase">
-                  Sabtu · 22 Agustus 2026
+                  {longDateText}
                 </p>
                 <h3 className="mt-3 font-serif text-3xl">{event.title}</h3>
                 <p className="mt-3 text-xs text-ivory/70">{event.time}</p>

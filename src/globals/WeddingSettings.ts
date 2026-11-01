@@ -1,4 +1,5 @@
-import type { GlobalConfig } from 'payload'
+import type { Access, GlobalConfig } from 'payload'
+const isAdmin: Access = ({ req }) => req.user?.collection === 'admins'
 
 export const WeddingSettings: GlobalConfig = {
   slug: 'wedding-settings',
@@ -6,7 +7,8 @@ export const WeddingSettings: GlobalConfig = {
     group: 'Wedding OS',
   },
   access: {
-    read: () => true,
+    read: isAdmin,
+    update: isAdmin,
   },
   fields: [
     {
