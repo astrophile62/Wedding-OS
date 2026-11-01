@@ -1,4 +1,9 @@
+allowBuilds:
+  esbuild: true
 # Keep host-native binaries for builds and Linux ARM64 binaries for Lambda.
+permissions:
+  payload:
+    skills: true
 supportedArchitectures:
   os:
     - current
@@ -9,3 +14,10 @@ supportedArchitectures:
   libc:
     - current
     - glibc
+
+packages:
+  - "."
+
+skills:
+  dirs:
+    - .claude/skills
