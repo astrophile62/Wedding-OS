@@ -799,6 +799,20 @@ export interface WeddingSetting {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Matikan untuk menyembunyikan pemutar musik.
+   */
+  musicEnabled?: boolean | null;
+  /**
+   * Daftar lagu. Hanya musik bebas royalti atau berlisensi.
+   */
+  musicTracks?:
+    | {
+        title: string;
+        audio: number | Media;
+        id?: string | null;
+      }[]
+    | null;
   createdBy?: {
     relationTo: 'admins';
     value: number | Admin;
@@ -856,6 +870,14 @@ export interface WeddingSettingsSelect<T extends boolean = true> {
     | {
         label?: T;
         enabled?: T;
+        id?: T;
+      };
+  musicEnabled?: T;
+  musicTracks?:
+    | T
+    | {
+        title?: T;
+        audio?: T;
         id?: T;
       };
   createdBy?: T;

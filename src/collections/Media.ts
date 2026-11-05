@@ -16,5 +16,7 @@ export const Media: CollectionConfig = {
     createFolderField({ relationTo: 'folders' }),
     createTagField({ relationTo: 'tags' }),
   ],
-  upload: true,
+    upload: {
+    mimeTypes: ['image/*', 'video/mp4', 'audio/mpeg'],
+  },
 }

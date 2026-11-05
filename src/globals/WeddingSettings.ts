@@ -72,5 +72,20 @@ export const WeddingSettings: GlobalConfig = {
         { name: 'enabled', type: 'checkbox', defaultValue: true },
       ],
     },
+        {
+      name: 'musicEnabled',
+      type: 'checkbox',
+      defaultValue: true,
+      admin: { description: 'Matikan untuk menyembunyikan pemutar musik.' },
+    },
+    {
+      name: 'musicTracks',
+      type: 'array',
+      admin: { description: 'Daftar lagu. Hanya musik bebas royalti atau berlisensi.' },
+      fields: [
+        { name: 'title', type: 'text', required: true },
+        { name: 'audio', type: 'upload', relationTo: 'media', required: true },
+      ],
+    },
   ],
 }

@@ -1,8 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import { useActionState, useEffect, useMemo, useState } from 'react'
+import { useActionState, useEffect, useMemo, useRef, useState } from 'react'
 import { submitRSVP, type RSVPState } from '../actions'
+import { useMusicPlayer, type MusicTrack } from './useMusicPlayer'
 
 type Media = {
   id: string | number
@@ -25,6 +26,14 @@ type Settings = {
   groomName?: string
   hashtag?: string
   weddingDate?: string
+  musicEnabled?: boolean | null
+  musicTracks?:
+    | {
+        id?: string | null
+        title?: string
+        audio?: number | { url?: string | null } | null
+      }[]
+    | null
   verse?: string
   venue?: { name?: string; address?: string; mapsUrl?: string }
   people?: {
@@ -179,9 +188,10 @@ export default function WeddingExperience({
   guest: Guest | null
 }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [playing, setPlaying] = useState(false)
   const [showTrack, setShowTrack] = useState(false)
-  const [lightbox, setLightbox] = useState<Media | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const rollerRef = useRef<HTMLDivElement>(null)
+  const touchStartX = useRef<number | null>(null)
   const [copied, setCopied] = useState('')
   const [state, formAction, pending] = useActionState(submitRSVP, initialRSVPState)
 
@@ -196,17 +206,76 @@ export default function WeddingExperience({
     [gallery],
   )
 
+  const galleryPhotos = useMemo(
+    () =>
+      byRole.gallery.flatMap((item) => {
+        const media = getMedia(item)
+        return media?.url
+          ? [
+              {
+                id: item.id,
+                url: media.url,
+                alt: media.alt || item.caption || 'Foto Dina dan Wira',
+                caption: item.caption,
+              },
+            ]
+          : []
+      }),
+    [byRole.gallery],
+  )
+  const lightboxOpen = lightboxIndex !== null
+
+  useEffect(() => {
+    if (!lightboxOpen) return
+    const count = galleryPhotos.length
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setLightboxIndex(null)
+      else if (event.key === 'ArrowRight')
+        setLightboxIndex((i) => (i === null ? i : (i + 1) % count))
+      else if (event.key === 'ArrowLeft')
+        setLightboxIndex((i) => (i === null ? i : (i - 1 + count) % count))
+    }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [lightboxOpen, galleryPhotos.length])
+
+  function showPhoto(step: number) {
+    const count = galleryPhotos.length
+    setLightboxIndex((i) => (i === null || count === 0 ? i : (i + step + count) % count))
+  }
+
+  function scrollRoller(direction: 1 | -1) {
+    const element = rollerRef.current
+    if (element) element.scrollBy({ left: direction * element.clientWidth * 0.8, behavior: 'smooth' })
+  }
+
   useEffect(() => {
     if (!showTrack) return
-    const timeout = window.setTimeout(() => setShowTrack(false), 3000)
+    const timeout = window.setTimeout(() => setShowTrack(false), 5000)
     return () => window.clearTimeout(timeout)
   }, [showTrack])
 
-  const cover = getMedia(byRole.cover)
+  const tracks: MusicTrack[] = useMemo(
+    () =>
+      settings.musicEnabled === false
+        ? []
+        : (settings.musicTracks ?? []).flatMap((item) => {
+            const url = item.audio && typeof item.audio === 'object' ? item.audio.url : null
+            return url && item.title ? [{ title: item.title, url }] : []
+          }),
+    [settings.musicEnabled, settings.musicTracks],
+  )
+  const player = useMusicPlayer(tracks, { onTrackStart: () => setShowTrack(true) })
+
   const bride = getMedia(byRole.bride)
   const groom = getMedia(byRole.groom)
   const eventDate = new Date(settings.weddingDate || '2026-12-26T01:00:00.000Z')
-    const dateParts = (options: Intl.DateTimeFormatOptions) =>
+  const dateParts = (options: Intl.DateTimeFormatOptions) =>
     Object.fromEntries(
       new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', ...options })
         .formatToParts(eventDate)
@@ -217,19 +286,50 @@ export default function WeddingExperience({
   const coverDateText = `${numericDate.day} · ${numericDate.month} · ${numericDate.year}`
   const longDateText = `${longDate.weekday} · ${longDate.day} ${longDate.month} ${longDate.year}`
 
+  const eventTime = eventDate.getTime()
+  const [clientNow, setClientNow] = useState<number | null>(null)
+
+  useEffect(() => {
+    setClientNow(Date.now())
+    const timer = window.setInterval(() => setClientNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+
   const countdown = useMemo(() => {
-    const diff = Math.max(0, eventDate.getTime() - Date.now())
+    const diff = clientNow === null ? 0 : Math.max(0, eventTime - clientNow)
     return {
       hari: Math.floor(diff / 86_400_000),
       jam: Math.floor((diff / 3_600_000) % 24),
       menit: Math.floor((diff / 60_000) % 60),
       detik: Math.floor((diff / 1000) % 60),
     }
-  }, [eventDate])
+  }, [eventTime, clientNow])
+
+  const coverVideoRef = useRef<HTMLVideoElement>(null)
+  const [reduceMotion, setReduceMotion] = useState(false)
+
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+    setReduceMotion(query.matches || Boolean(connection?.saveData))
+  }, [])
+
+  useEffect(() => {
+    const video = coverVideoRef.current
+    if (!video) return
+    video.muted = true // beberapa browser perlu ini agar autoplay diizinkan
+    const sync = () => {
+      if (isOpen || document.visibilityState === 'hidden') video.pause()
+      else void video.play().catch(() => {})
+    }
+    sync()
+    document.addEventListener('visibilitychange', sync)
+    return () => document.removeEventListener('visibilitychange', sync)
+  }, [isOpen, reduceMotion])
 
   function openInvitation() {
     setIsOpen(true)
-    setPlaying(true)
+    player.start()
     window.setTimeout(() => {
       document.querySelector('#invitation')?.scrollIntoView({ behavior: 'smooth' })
     }, 450)
@@ -248,19 +348,36 @@ export default function WeddingExperience({
           isOpen ? 'pointer-events-none -translate-y-10 opacity-0' : ''
         }`}
       >
-        <video
-          className="absolute inset-0 size-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          poster={cover?.url || undefined}
+        {/* Latar buram dari poster: mengisi sisi yang kosong tanpa memotong video */}
+        <div
           aria-hidden="true"
-          tabIndex={-1}
-        >
-          <source src="/media/dina-yuliarty.mp4" type="video/mp4" />
-        </video>
+          className="absolute inset-0 scale-110 bg-cover bg-center opacity-60 blur-2xl"
+          style={{ backgroundImage: "url('/media/poster.jpg')" }}
+        />
+        {reduceMotion ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/media/poster.jpg"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 size-full object-contain"
+          />
+        ) : (
+          <video
+            ref={coverVideoRef}
+            className="absolute inset-0 size-full object-contain"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster="/media/poster.jpg"
+            aria-hidden="true"
+            tabIndex={-1}
+          >
+            <source src="/media/cover.mp4" type="video/mp4" />
+          </video>
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-charcoal/30 via-charcoal/20 to-charcoal/85" />
         <div className="relative flex min-h-svh flex-col items-center justify-between px-6 py-12 text-center text-ivory">
           <div className="flex items-center gap-3 text-[0.62rem] font-semibold tracking-[0.34em] uppercase">
@@ -406,7 +523,9 @@ export default function WeddingExperience({
           <div className="mx-auto mb-14 grid max-w-lg grid-cols-4 divide-x divide-ivory/15 rounded-2xl border border-ivory/15 bg-ivory/5 p-5 text-center backdrop-blur">
             {Object.entries(countdown).map(([label, value]) => (
               <div key={label}>
-                <p className="font-serif text-3xl">{String(value).padStart(2, '0')}</p>
+                <p className="font-serif text-3xl" suppressHydrationWarning>
+                  {clientNow === null ? '--' : String(value).padStart(2, '0')}
+                </p>
                 <p className="mt-1 text-[0.52rem] tracking-[0.15em] text-ivory/55 uppercase">
                   {label}
                 </p>
@@ -448,35 +567,53 @@ export default function WeddingExperience({
           </div>
         </section>
 
-        <section className="px-4 py-24">
-          <SectionTitle kicker="Our Gallery">Captured in time</SectionTitle>
-          <div className="mx-auto grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-3">
-            {byRole.gallery.map((item, index) => {
-              const media = getMedia(item)
-              return (
+        {galleryPhotos.length > 0 && (
+          <section className="py-24">
+            <SectionTitle kicker="Our Gallery">Captured in time</SectionTitle>
+            <div
+              ref={rollerRef}
+              className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-6 pb-4 md:px-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {galleryPhotos.map((photo, index) => (
                 <button
-                  key={item.id}
+                  key={photo.id}
                   type="button"
-                  onClick={() => setLightbox(media)}
-                  className={`group relative overflow-hidden bg-sand ${
-                    index === 0 ? 'row-span-2 aspect-[3/5]' : 'aspect-square'
-                  } ${index === 2 ? 'col-span-2 md:col-span-1' : ''}`}
+                  onClick={() => setLightboxIndex(index)}
+                  className="group relative aspect-[3/4] w-[68vw] max-w-[17rem] shrink-0 snap-center overflow-hidden rounded-2xl bg-sand md:w-64"
+                  aria-label={`Buka foto ${index + 1} dari ${galleryPhotos.length}`}
                 >
-                  {media?.url && (
-                    <Image
-                      src={media.url}
-                      alt={media.alt || item.caption}
-                      fill
-                      sizes="(max-width: 768px) 50vw, 33vw"
-                      className="object-cover transition duration-700 group-hover:scale-105"
-                    />
-                  )}
-                  <span className="absolute inset-0 bg-charcoal/0 transition group-hover:bg-charcoal/15" />
+                  <Image
+                    src={photo.url}
+                    alt={photo.alt}
+                    fill
+                    sizes="(max-width: 768px) 68vw, 256px"
+                    className="object-cover transition duration-700 group-hover:scale-105"
+                  />
                 </button>
-              )
-            })}
-          </div>
-        </section>
+              ))}
+            </div>
+            {galleryPhotos.length > 1 && (
+              <div className="mt-4 hidden justify-center gap-3 md:flex">
+                <button
+                  type="button"
+                  onClick={() => scrollRoller(-1)}
+                  className="grid size-11 place-items-center rounded-full border border-charcoal/20 transition hover:bg-charcoal hover:text-ivory"
+                  aria-label="Geser galeri ke kiri"
+                >
+                  <Icon name="arrow" className="size-4 rotate-180" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollRoller(1)}
+                  className="grid size-11 place-items-center rounded-full border border-charcoal/20 transition hover:bg-charcoal hover:text-ivory"
+                  aria-label="Geser galeri ke kanan"
+                >
+                  <Icon name="arrow" className="size-4" />
+                </button>
+              </div>
+            )}
+          </section>
+        )}
 
         <section className="bg-sand px-6 py-24">
           <SectionTitle kicker="RSVP">Kehadiran Anda berarti</SectionTitle>
@@ -484,7 +621,7 @@ export default function WeddingExperience({
             action={formAction}
             className="mx-auto max-w-xl rounded-[2rem] border border-charcoal/10 bg-ivory p-6 shadow-[0_24px_70px_rgba(56,52,45,0.08)] md:p-10"
           >
-                        <input type="hidden" name="guestId" value={guest?.id || ''} />
+            <input type="hidden" name="guestId" value={guest?.id || ''} />
             {/* Kolom jebakan bot: tidak terlihat dan tidak bisa difokus oleh manusia */}
             <input
               type="text"
@@ -681,53 +818,120 @@ export default function WeddingExperience({
         </footer>
       </div>
 
-      <div className="fixed right-5 bottom-5 z-40 flex items-center gap-3">
-        <span
-          className={`rounded-full bg-charcoal px-4 py-2 text-[0.6rem] text-ivory shadow-lg transition duration-500 ${
-            showTrack ? 'translate-x-0 opacity-100' : 'pointer-events-none translate-x-3 opacity-0'
-          }`}
-        >
-          Teman Hidup · Tulus
-        </span>
-        <button
-          type="button"
-          onClick={() => {
-            setPlaying((value) => !value)
-            setShowTrack(true)
-          }}
-          className={`grid size-14 place-items-center rounded-full bg-sage text-ivory shadow-xl transition hover:bg-sage-deep ${
-            playing ? 'music-pulse' : ''
-          }`}
-          aria-label={playing ? 'Jeda musik' : 'Putar musik'}
-        >
-          <Icon name={playing ? 'pause' : 'play'} className="size-5" />
-        </button>
-      </div>
+      {player.hasTracks && (
+        <div className="fixed right-5 bottom-5 z-40 flex items-center gap-3">
+          <span
+            role="status"
+            className={`max-w-[55vw] truncate rounded-full bg-charcoal px-4 py-2 text-[0.6rem] text-ivory shadow-lg transition duration-500 ${
+              showTrack || player.status === 'error'
+                ? 'translate-x-0 opacity-100'
+                : 'pointer-events-none translate-x-3 opacity-0'
+            }`}
+          >
+            {player.status === 'error' ? 'Musik tidak dapat diputar' : player.current?.title}
+          </span>
+          {tracks.length > 1 && (
+            <button
+              type="button"
+              onClick={() => player.next()}
+              className="grid size-11 place-items-center rounded-full bg-charcoal/80 text-ivory shadow-lg transition hover:bg-charcoal"
+              aria-label="Lagu berikutnya"
+            >
+              <Icon name="arrow" className="size-4" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              player.toggle()
+              setShowTrack(true)
+            }}
+            className={`grid size-14 place-items-center rounded-full bg-sage text-ivory shadow-xl transition hover:bg-sage-deep ${
+              player.playing ? 'music-pulse' : ''
+            }`}
+            aria-label={player.playing ? 'Jeda musik' : 'Putar musik'}
+          >
+            <Icon name={player.playing ? 'pause' : 'play'} className="size-5" />
+          </button>
+        </div>
+      )}
 
-      {lightbox?.url && (
+      {lightboxIndex !== null && galleryPhotos[lightboxIndex] && (
         <div
-          className="fixed inset-0 z-[60] grid place-items-center bg-charcoal/95 p-5"
+          className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-charcoal/85 backdrop-blur-md"
           role="dialog"
           aria-modal="true"
           aria-label="Tampilan foto penuh"
+          onClick={() => setLightboxIndex(null)}
+          onTouchStart={(event) => {
+            touchStartX.current = event.touches[0]?.clientX ?? null
+          }}
+          onTouchEnd={(event) => {
+            const start = touchStartX.current
+            touchStartX.current = null
+            const end = event.changedTouches[0]?.clientX
+            if (start === null || end === undefined) return
+            const delta = end - start
+            if (Math.abs(delta) > 50) showPhoto(delta < 0 ? 1 : -1)
+          }}
         >
           <button
             type="button"
-            onClick={() => setLightbox(null)}
+            autoFocus
+            onClick={(event) => {
+              event.stopPropagation()
+              setLightboxIndex(null)
+            }}
             className="absolute top-5 right-5 grid size-12 place-items-center rounded-full border border-ivory/30 text-ivory"
             aria-label="Tutup foto"
           >
             <Icon name="x" />
           </button>
-          <div className="relative h-[78vh] w-full max-w-3xl">
+          {galleryPhotos.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  showPhoto(-1)
+                }}
+                className="absolute top-1/2 left-3 grid size-12 -translate-y-1/2 place-items-center rounded-full border border-ivory/30 bg-charcoal/40 text-ivory"
+                aria-label="Foto sebelumnya"
+              >
+                <Icon name="arrow" className="size-5 rotate-180" />
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  showPhoto(1)
+                }}
+                className="absolute top-1/2 right-3 grid size-12 -translate-y-1/2 place-items-center rounded-full border border-ivory/30 bg-charcoal/40 text-ivory"
+                aria-label="Foto berikutnya"
+              >
+                <Icon name="arrow" className="size-5" />
+              </button>
+            </>
+          )}
+          <div
+            className="relative h-[78vh] w-full max-w-3xl px-4"
+            onClick={(event) => event.stopPropagation()}
+          >
             <Image
-              src={lightbox.url}
-              alt={lightbox.alt || 'Foto galeri Dina dan Wira'}
+              key={galleryPhotos[lightboxIndex].id}
+              src={galleryPhotos[lightboxIndex].url}
+              alt={galleryPhotos[lightboxIndex].alt}
               fill
-              sizes="100vw"
-              className="object-contain"
+              sizes="(max-width: 768px) 100vw, 768px"
+              className="object-contain drop-shadow-2xl"
             />
           </div>
+          <p className="mt-4 px-6 text-center text-xs text-ivory/75">
+            {galleryPhotos[lightboxIndex].caption || ''}
+            <span className="ml-3 text-ivory/50">
+              {lightboxIndex + 1} / {galleryPhotos.length}
+            </span>
+          </p>
         </div>
       )}
     </main>
