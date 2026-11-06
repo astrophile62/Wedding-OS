@@ -10,6 +10,7 @@ export const WeddingSettings: GlobalConfig = {
     read: isAdmin,
     update: isAdmin,
   },
+  
   fields: [
     {
       type: 'row',
@@ -64,6 +65,19 @@ export const WeddingSettings: GlobalConfig = {
         { name: 'accountName', type: 'text', required: true },
       ],
     },
+    {
+  name: 'backgroundImages',
+  type: 'group',
+  admin: { description: 'Foto latar untuk setiap bagian halaman (opsional, blur otomatis).' },
+  fields: [
+    { name: 'verse', type: 'upload', relationTo: 'media', label: 'Ayat Ar-Rum' },
+    { name: 'bride', type: 'upload', relationTo: 'media', label: 'Halaman Bride' },
+    { name: 'groom', type: 'upload', relationTo: 'media', label: 'Halaman Groom' },
+    { name: 'loveStory', type: 'upload', relationTo: 'media', label: 'Kisah Cinta' },
+    { name: 'saveTheDate', type: 'upload', relationTo: 'media', label: 'Save The Date' },
+    { name: 'rsvp', type: 'upload', relationTo: 'media', label: 'RSVP' },
+  ],
+},
     {
       name: 'sectionOrder',
       type: 'array',

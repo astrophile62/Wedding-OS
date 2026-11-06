@@ -260,15 +260,28 @@ export default function WeddingExperience({
     return () => window.clearTimeout(timeout)
   }, [showTrack])
 
+  // const tracks: MusicTrack[] = useMemo(
+    // () =>
+      //settings.musicEnabled === false
+        // ? []
+        //: (settings.musicTracks ?? []).flatMap((item) => {
+          //  const url = item.audio && typeof item.audio === 'object' ? item.audio.url : null
+            //return url && item.title ? [{ title: item.title, url }] : []
+          //}),
+    //[settings.musicEnabled, settings.musicTracks],
+  //)
+  
   const tracks: MusicTrack[] = useMemo(
     () =>
       settings.musicEnabled === false
         ? []
-        : (settings.musicTracks ?? []).flatMap((item) => {
-            const url = item.audio && typeof item.audio === 'object' ? item.audio.url : null
-            return url && item.title ? [{ title: item.title, url }] : []
-          }),
-    [settings.musicEnabled, settings.musicTracks],
+        : [
+            {
+              title: 'JKT48 - Rapsodi',
+              url: '/media/JKT48_Rapsodi.mp3', // Memanggil file manual Anda
+            },
+          ],
+    [settings.musicEnabled],
   )
   const player = useMusicPlayer(tracks, { onTrackStart: () => setShowTrack(true) })
 
