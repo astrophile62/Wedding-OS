@@ -167,8 +167,16 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
     return () => window.clearTimeout(timeout)
   }, [showTrack])
 
-  // HARDCODED MUSIC JKT48
-  const tracks: MusicTrack[] = useMemo(() => settings.musicEnabled === false ? [] : [{ title: 'JKT48 - Rapsodi', url: '/media/JKT48_Rapsodi.mp3' }], [settings.musicEnabled])
+ // PAKSA MUSIK MENYALA (BYPASS CMS)
+  const tracks: MusicTrack[] = useMemo(
+    () => [
+      {
+        title: 'JKT48 - Rapsodi',
+        url: '/media/JKT48_Rapsodi.mp3', // Ganti .mp3 menjadi .m4a jika file asli Anda adalah m4a
+      },
+    ],
+    [],
+  )
   const player = useMusicPlayer(tracks, { onTrackStart: () => setShowTrack(true) })
 
   // Data Tanggal
