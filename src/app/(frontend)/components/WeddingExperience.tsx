@@ -5,8 +5,8 @@ import { useActionState, useEffect, useMemo, useRef, useState } from 'react'
 import { submitRSVP, type RSVPState } from '../actions'
 import { useMusicPlayer, type MusicTrack } from './useMusicPlayer'
 
-// --- KOMPONEN EFEK MESIN TIK (Kursor kedap-kedip lalu hilang) ---
-function TypewriterEffect({ text, delay = 100 }: { text: string; delay?: number }) {
+// --- KOMPONEN EFEK MESIN TIK (Lebih Cepat & Kursor Hilang) ---
+function TypewriterEffect({ text, delay = 80 }: { text: string; delay?: number }) {
   const [displayedText, setDisplayedText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
@@ -34,14 +34,14 @@ function TypewriterEffect({ text, delay = 100 }: { text: string; delay?: number 
       i++
       if (i >= text.length) {
         clearInterval(timer)
-        setIsComplete(true) // Hilangkan kursor saat selesai
+        setIsComplete(true)
       }
     }, delay)
     return () => clearInterval(timer)
   }, [text, delay, isTyping])
 
   return (
-    <span ref={ref} className="inline-block">
+    <span ref={ref} className="inline-block transition-opacity duration-300">
       {displayedText}
       {!isComplete && (
         <span className="animate-pulse border-r-[1.5px] border-current ml-[2px]" style={{ animationDuration: '0.8s' }}>&nbsp;</span>
@@ -50,7 +50,7 @@ function TypewriterEffect({ text, delay = 100 }: { text: string; delay?: number 
   )
 }
 
-// --- KOMPONEN EFEK TULISAN TANGAN (Muncul per huruf seperti ditulis) ---
+// --- KOMPONEN EFEK TULISAN TANGAN (HANDWRITING) ---
 function HandwritingEffect({ text, delay = 0, speed = 120 }: { text: string; delay?: number, speed?: number }) {
   const [visibleChars, setVisibleChars] = useState(0)
   const ref = useRef<HTMLSpanElement>(null)
@@ -96,6 +96,38 @@ function HandwritingEffect({ text, delay = 0, speed = 120 }: { text: string; del
     </span>
   )
 }
+
+// --- KOMPONEN EFEK POP-UP (Untuk Ayat & Konten Lain) ---
+function PopUpEffect({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const [isVisible, setIsVisible] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => setIsVisible(true), delay)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.2 }
+    )
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [delay])
+
+  return (
+    <div
+      ref={ref}
+      className={`transition-all duration-1000 ease-out transform ${
+        isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-8'
+      }`}
+    >
+      {children}
+    </div>
+  )
+}
+
 
 type Media = { id: string | number; url?: string | null; alt?: string; width?: number | null; height?: number | null }
 type GalleryItem = { id: string | number; role: 'cover' | 'bride' | 'groom' | 'story' | 'gallery'; caption: string; order: number; image: string | number | Media }
@@ -143,6 +175,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
   const [isOpen, setIsOpen] = useState(false)
   const [showTrack, setShowTrack] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const touchStartX = useRef<number | null>(null)
   const [copied, setCopied] = useState('')
   const [state, formAction, pending] = useActionState(submitRSVP, initialRSVPState)
 
@@ -176,7 +209,6 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
   const tracks: MusicTrack[] = useMemo(() => [{ title: 'JKT48 - Rapsodi', url: '/media/JKT48_Rapsodi.mp3' }], [])
   const player = useMusicPlayer(tracks, { onTrackStart: () => setShowTrack(true) })
 
-  // --- HACK AUTOPLAY MUSIK (Otomatis nyala saat disentuh) ---
   useEffect(() => {
     const initAudio = () => {
       if (!player.playing) player.start()
@@ -251,18 +283,18 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
         <div className="absolute inset-0 z-0 bg-gradient-to-b from-charcoal/60 via-charcoal/20 to-charcoal/95" />
         <div className="relative z-10 flex min-h-svh flex-col items-center justify-between px-6 py-16 text-center text-ivory">
           <div className="flex flex-col items-center gap-2 text-[0.65rem] font-bold tracking-[0.3em] uppercase opacity-90 mt-10 min-h-[30px]">
-            <TypewriterEffect text="The Wedding of" delay={200} />
+            <TypewriterEffect text="The Wedding of" delay={120} />
             <span className="h-[2px] w-12 bg-gold-soft/80 mt-1" />
           </div>
           <div className="min-h-[160px] flex flex-col justify-center">
-            {/* EFEK HANDWRITING BARU: Muncul per huruf */}
+            {/* EFEK HANDWRITING UNTUK NAMA */}
             <h1 className="text-6xl md:text-7xl leading-[1.2] font-medium tracking-normal drop-shadow-md text-ivory">
-              <HandwritingEffect text={cleanName(settings.brideName, 'Dina Yuliarty')} delay={2200} speed={150} /> <br />
+              <HandwritingEffect text={cleanName(settings.brideName, 'Dina Yuliarty')} delay={1200} speed={120} /> <br />
               <span className="font-serif text-3xl italic text-gold-soft my-1 block">&amp;</span>
-              <HandwritingEffect text={cleanName(settings.groomName, 'Wirahilman')} delay={4200} speed={150} />
+              <HandwritingEffect text={cleanName(settings.groomName, 'Wirahilman')} delay={2800} speed={120} />
             </h1>
             <p className="mt-8 text-[0.7rem] tracking-[0.3em] uppercase opacity-80 font-medium min-h-[20px]">
-              <TypewriterEffect text={coverDateText} delay={300} />
+              <TypewriterEffect text={coverDateText} delay={100} />
             </p>
           </div>
           <div className="w-full max-w-sm mb-10">
@@ -280,53 +312,61 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
       {/* ================= CONTENT INVITATION ================= */}
       <div id="invitation" className={`transition-opacity duration-1000 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
         
-        {/* 1. AYAT SUCI (DARK OVERLAY) */}
+        {/* 1. AYAT SUCI (DARK OVERLAY & POP-UP) */}
         <section className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 text-center snap-start">
           <div className="absolute inset-0 z-0">
             <Image src="/media/MLJ01773.jpeg" alt="Verse" fill sizes="100vw" quality={75} className="object-cover" />
             <div className="absolute inset-0 bg-black/60" />
           </div>
           <div className="relative z-10 p-6 max-w-md">
-            <blockquote className="font-serif text-lg md:text-xl leading-relaxed italic text-ivory/90 font-light min-h-[120px]">
-              <TypewriterEffect text={`" ${settings.verse || 'Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri...'} "`} delay={80} />
-            </blockquote>
-            <p className="mt-8 text-[0.65rem] font-bold tracking-[0.25em] text-gold-soft uppercase">
-              QS. Ar-Rum : 21
-            </p>
+            <PopUpEffect delay={100}>
+              <blockquote className="font-serif text-lg md:text-xl leading-relaxed italic text-ivory/90 font-light min-h-[120px]">
+                " {settings.verse || 'Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang. Sesungguhnya pada yang demikian itu benar-benar terdapat tanda-tanda (kebesaran Allah) bagi kaum yang berpikir.'} "
+              </blockquote>
+            </PopUpEffect>
+            <PopUpEffect delay={300}>
+              <p className="mt-8 text-[0.65rem] font-bold tracking-[0.25em] text-gold-soft uppercase">
+                QS. Ar-Rum : 21
+              </p>
+            </PopUpEffect>
           </div>
         </section>
 
-        {/* 2. THE BRIDE (FULLSCREEN NO BOX) */}
+        {/* 2. THE BRIDE */}
         <section className="relative flex min-h-svh flex-col justify-end overflow-hidden text-center snap-start">
           <div className="absolute inset-0 z-0">
             <Image src="/media/MLJ02061.jpeg" alt="Bride" fill sizes="100vw" quality={85} className="object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/20 to-charcoal/10" />
           </div>
           <div className="relative z-10 w-full px-6 pb-20">
-            <p className="text-[0.65rem] font-bold tracking-[0.3em] text-ivory/70 uppercase mb-2">The Bride</p>
-            <h3 className="font-serif text-4xl md:text-5xl font-medium drop-shadow-md text-ivory">
-              {cleanName(settings.people?.brideFullName, 'Dina Yuliarty')}
-            </h3>
-            <p className="mx-auto mt-4 max-w-xs text-[0.7rem] font-medium leading-relaxed text-ivory/60 tracking-widest uppercase">
-              Putri Dari <br/> <span className="text-ivory/90">{settings.people?.brideParents}</span>
-            </p>
+             <PopUpEffect>
+                <p className="text-[0.65rem] font-bold tracking-[0.3em] text-ivory/70 uppercase mb-2">The Bride</p>
+                <h3 className="font-serif text-4xl md:text-5xl font-medium drop-shadow-md text-ivory">
+                  {cleanName(settings.people?.brideFullName, 'Dina Yuliarty')}
+                </h3>
+                <p className="mx-auto mt-4 max-w-xs text-[0.7rem] font-medium leading-relaxed text-ivory/60 tracking-widest uppercase">
+                  Putri Dari <br/> <span className="text-ivory/90">{settings.people?.brideParents}</span>
+                </p>
+             </PopUpEffect>
           </div>
         </section>
 
-        {/* 3. THE GROOM (FULLSCREEN NO BOX) */}
+        {/* 3. THE GROOM */}
         <section className="relative flex min-h-svh flex-col justify-end overflow-hidden text-center snap-start">
           <div className="absolute inset-0 z-0">
              <Image src="/media/MLJ02105.jpeg" alt="Groom" fill sizes="100vw" quality={85} className="object-cover" />
              <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/20 to-charcoal/10" />
           </div>
           <div className="relative z-10 w-full px-6 pb-20">
-            <p className="text-[0.65rem] font-bold tracking-[0.3em] text-ivory/70 uppercase mb-2">The Groom</p>
-            <h3 className="font-serif text-4xl md:text-5xl font-medium drop-shadow-md text-ivory">
-              {cleanName(settings.people?.groomFullName, 'Wirahilman')}
-            </h3>
-            <p className="mx-auto mt-4 max-w-xs text-[0.7rem] font-medium leading-relaxed text-ivory/60 tracking-widest uppercase">
-              Putra Dari <br/> <span className="text-ivory/90">{settings.people?.groomParents}</span>
-            </p>
+            <PopUpEffect>
+                <p className="text-[0.65rem] font-bold tracking-[0.3em] text-ivory/70 uppercase mb-2">The Groom</p>
+                <h3 className="font-serif text-4xl md:text-5xl font-medium drop-shadow-md text-ivory">
+                  {cleanName(settings.people?.groomFullName, 'Wirahilman')}
+                </h3>
+                <p className="mx-auto mt-4 max-w-xs text-[0.7rem] font-medium leading-relaxed text-ivory/60 tracking-widest uppercase">
+                  Putra Dari <br/> <span className="text-ivory/90">{settings.people?.groomParents}</span>
+                </p>
+            </PopUpEffect>
           </div>
         </section>
 
@@ -337,84 +377,125 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
              <div className="absolute inset-0 bg-black/75" />
           </div>
           <div className="relative z-10">
-            <SectionTitle kicker="Our Journey">Merangkai Cerita</SectionTitle>
+             <PopUpEffect>
+                <SectionTitle kicker="Our Journey">Merangkai Cerita</SectionTitle>
+             </PopUpEffect>
             <div className="relative mx-auto max-w-xl">
               <div className="absolute top-3 bottom-3 left-[2.75rem] w-px bg-gold-soft/30 md:left-1/2" />
               {settings.loveStory?.map((story, index) => {
                 const storyMedia = getMedia(byRole.story[index % Math.max(1, byRole.story.length)])
                 return (
-                  <article key={story.id || story.year} className={`relative mb-14 grid grid-cols-[5.5rem_1fr] gap-6 md:grid-cols-2 ${index % 2 ? 'md:[&>*:last-child]:col-start-1 md:[&>*:last-child]:row-start-1' : ''}`}>
-                    <div className={`relative z-10 size-[5.5rem] overflow-hidden rounded-full border border-ivory/20 bg-charcoal shadow-xl ${index % 2 ? 'md:ml-5' : 'md:ml-auto md:mr-5'}`}>
-                      {storyMedia?.url && (
-                        <Image src={storyMedia.url} alt={storyMedia.alt || story.title} fill sizes="88px" className="object-cover" />
-                      )}
-                    </div>
-                    <div className={`pt-2 md:px-6 ${index % 2 ? 'md:text-right' : ''}`}>
-                      <p className="text-[0.65rem] font-bold tracking-[0.2em] text-gold-soft uppercase">{story.year}</p>
-                      <h3 className="mt-2 font-serif text-2xl font-medium text-ivory">{story.title}</h3>
-                      <p className="mt-3 text-sm leading-relaxed text-ivory/70 font-light">{story.description}</p>
-                    </div>
-                  </article>
+                  <PopUpEffect key={story.id || story.year} delay={index * 100}>
+                    <article className={`relative mb-14 grid grid-cols-[5.5rem_1fr] gap-6 md:grid-cols-2 ${index % 2 ? 'md:[&>*:last-child]:col-start-1 md:[&>*:last-child]:row-start-1' : ''}`}>
+                      <div className={`relative z-10 size-[5.5rem] overflow-hidden rounded-full border border-ivory/20 bg-charcoal shadow-xl ${index % 2 ? 'md:ml-5' : 'md:ml-auto md:mr-5'}`}>
+                        {storyMedia?.url && (
+                          <Image src={storyMedia.url} alt={storyMedia.alt || story.title} fill sizes="88px" className="object-cover" />
+                        )}
+                      </div>
+                      <div className={`pt-2 md:px-6 ${index % 2 ? 'md:text-right' : ''}`}>
+                        <p className="text-[0.65rem] font-bold tracking-[0.2em] text-gold-soft uppercase">{story.year}</p>
+                        <h3 className="mt-2 font-serif text-2xl font-medium text-ivory">{story.title}</h3>
+                        <p className="mt-3 text-sm leading-relaxed text-ivory/70 font-light">{story.description}</p>
+                      </div>
+                    </article>
+                  </PopUpEffect>
                 )
               })}
             </div>
           </div>
         </section>
 
-        {/* 5. SAVE THE DATE */}
+        {/* 5. SAVE THE DATE (DENGAN JADWAL AKAD & RESEPSI DIKEMBALIKAN) */}
         <section className="relative overflow-hidden bg-charcoal px-6 py-28 text-ivory snap-start flex flex-col items-center justify-center min-h-svh">
           <div className="absolute inset-0 z-0">
              <Image src="/media/MLJ01952.jpeg" alt="Save the Date" fill sizes="100vw" quality={60} className="object-cover" />
-             <div className="absolute inset-0 bg-black/60" />
+             <div className="absolute inset-0 bg-black/70" />
           </div>
-          <div className="relative z-10 w-full text-center">
-            <h2 className="font-serif text-4xl leading-tight font-medium mb-2 uppercase tracking-widest text-gold-soft">
-              Resepsi
-            </h2>
-            <p className="text-[0.7rem] tracking-[0.3em] text-ivory/80 uppercase mb-12">
-              {longDateText}
-            </p>
+          <div className="relative z-10 w-full max-w-4xl text-center">
+            
+            <PopUpEffect>
+                <h2 className="font-serif text-3xl leading-tight font-medium mb-1 uppercase tracking-widest text-ivory/70 text-[0.65rem]">
+                  Save The Date
+                </h2>
+                <p className="font-serif text-4xl mb-12 text-ivory">Hari yang kami nanti</p>
+            </PopUpEffect>
 
-            <div className="mx-auto mb-16 grid max-w-sm grid-cols-4 divide-x divide-ivory/20">
-              {Object.entries(countdown).map(([label, value]) => (
-                <div key={label}>
-                  <p className="font-serif text-3xl font-light text-ivory" suppressHydrationWarning>
-                    {clientNow === null ? '--' : String(value).padStart(2, '0')}
-                  </p>
-                  <p className="mt-2 text-[0.55rem] tracking-[0.2em] text-ivory/50 uppercase font-bold">{label}</p>
+            <PopUpEffect delay={150}>
+                <div className="mx-auto mb-16 grid max-w-sm grid-cols-4 divide-x divide-ivory/20 border border-ivory/20 rounded-2xl bg-black/20 backdrop-blur-sm p-4">
+                  {Object.entries(countdown).map(([label, value]) => (
+                    <div key={label}>
+                      <p className="font-serif text-3xl font-light text-ivory" suppressHydrationWarning>
+                        {clientNow === null ? '--' : String(value).padStart(2, '0')}
+                      </p>
+                      <p className="mt-2 text-[0.55rem] tracking-[0.2em] text-ivory/50 uppercase font-bold">{label}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
+            </PopUpEffect>
+
+            {/* KOTAK AKAD & RESEPSI */}
+            <div className="grid md:grid-cols-2 gap-6 mb-16">
+               <PopUpEffect delay={300}>
+                  <div className="border border-ivory/20 bg-black/30 backdrop-blur-md rounded-3xl p-8 text-center h-full">
+                     <Icon name="calendar" className="mx-auto size-6 text-gold-soft mb-4 opacity-80" />
+                     <p className="text-[0.65rem] font-bold tracking-[0.2em] text-ivory/70 uppercase mb-3">
+                         {longDateText.toUpperCase()}
+                     </p>
+                     <h3 className="font-serif text-3xl font-medium mb-3 text-ivory">Akad Nikah</h3>
+                     <p className="text-sm font-light text-ivory/80 tracking-wide">08.00 WIB — Selesai</p>
+                  </div>
+               </PopUpEffect>
+
+               <PopUpEffect delay={450}>
+                  <div className="border border-ivory/20 bg-black/30 backdrop-blur-md rounded-3xl p-8 text-center h-full">
+                     <Icon name="calendar" className="mx-auto size-6 text-gold-soft mb-4 opacity-80" />
+                     <p className="text-[0.65rem] font-bold tracking-[0.2em] text-ivory/70 uppercase mb-3">
+                         {longDateText.toUpperCase()}
+                     </p>
+                     <h3 className="font-serif text-3xl font-medium mb-3 text-ivory">Resepsi</h3>
+                     <p className="text-sm font-light text-ivory/80 tracking-wide">11.00 — 13.00 WIB</p>
+                  </div>
+               </PopUpEffect>
             </div>
 
-            <div>
-               <p className="text-[0.7rem] font-bold tracking-[0.3em] text-gold-soft uppercase mb-4">Location</p>
-               <h3 className="font-serif text-2xl font-medium">{settings.venue?.name || 'Ballroom Puri Mega Hotel'}</h3>
-               <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-ivory/60 font-light">{settings.venue?.address || 'Jakarta Pusat'}</p>
-               <a href={settings.venue?.mapsUrl} target="_blank" rel="noreferrer" className="mt-8 inline-flex h-10 items-center justify-center rounded-full border border-ivory/40 px-8 text-[0.65rem] font-bold tracking-[0.2em] text-ivory uppercase transition-colors hover:bg-ivory hover:text-charcoal backdrop-blur-sm">
-                  Google Maps
-               </a>
-            </div>
+            <PopUpEffect delay={600}>
+                <div className="bg-ivory/95 rounded-3xl p-8 text-charcoal shadow-2xl backdrop-blur-sm mx-auto max-w-2xl">
+                   <Icon name="location" className="mx-auto size-6 text-charcoal opacity-70 mb-3" />
+                   <h3 className="font-serif text-2xl font-bold mb-2">{settings.venue?.name || 'Ballroom Puri Mega Hotel'}</h3>
+                   <p className="mx-auto max-w-md text-xs leading-relaxed text-charcoal/80 font-medium">
+                       {settings.venue?.address || 'Jl. Pramuka No.59, Rawasari, Cempaka Putih, Jakarta Pusat'}
+                   </p>
+                   <a href={settings.venue?.mapsUrl} target="_blank" rel="noreferrer" className="mt-6 inline-flex h-12 items-center justify-center rounded-full border border-charcoal bg-charcoal px-8 text-[0.65rem] font-bold tracking-[0.2em] text-ivory uppercase transition-all hover:bg-transparent hover:text-charcoal">
+                      Buka Google Maps
+                   </a>
+                </div>
+            </PopUpEffect>
+
           </div>
         </section>
 
-        {/* 6. OUR GALLERY (MASONRY GRID, DARK BG) */}
+        {/* 6. OUR GALLERY */}
         {galleryPhotos.length > 0 && (
           <section className="bg-[#1a1a1a] py-28 px-4 md:px-10 snap-start">
-            <SectionTitle kicker="Our Moment">Terekam dalam waktu</SectionTitle>
+             <PopUpEffect>
+                <SectionTitle kicker="Our Moment">Terekam dalam waktu</SectionTitle>
+             </PopUpEffect>
             <div className="columns-2 md:columns-3 gap-4 space-y-4 max-w-5xl mx-auto">
               {galleryPhotos.map((photo, index) => (
-                <div key={photo.id} className="relative break-inside-avoid cursor-pointer overflow-hidden rounded-xl group" onClick={() => setLightboxIndex(index)}>
-                  <Image
-                    src={photo.url}
-                    alt={photo.alt}
-                    width={500}
-                    height={700}
-                    sizes="(max-width: 768px) 50vw, 33vw"
-                    quality={75}
-                    className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/20" />
-                </div>
+                <PopUpEffect key={photo.id} delay={index * 50}>
+                   <div className="relative break-inside-avoid cursor-pointer overflow-hidden rounded-xl group" onClick={() => setLightboxIndex(index)}>
+                     <Image
+                       src={photo.url}
+                       alt={photo.alt}
+                       width={500}
+                       height={700}
+                       sizes="(max-width: 768px) 50vw, 33vw"
+                       quality={75}
+                       className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
+                     />
+                     <div className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/20" />
+                   </div>
+                </PopUpEffect>
               ))}
             </div>
           </section>
@@ -427,54 +508,59 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
             <div className="absolute inset-0 bg-black/75" />
           </div>
           <div className="relative z-10">
-            <SectionTitle kicker="RSVP">Kehadiran Anda</SectionTitle>
-            <form action={formAction} className="mx-auto max-w-xl rounded-3xl border border-ivory/10 bg-black/40 p-6 md:p-10 backdrop-blur-xl">
-              <input type="hidden" name="guestId" value={guest?.id || ''} />
-              <input type="text" name="hp_catatan" tabIndex={-1} autoComplete="off" aria-hidden="true" className="sr-only" />
-              {guest?.invitationType === 'group' ? (
-                <>
-                  <label htmlFor="rsvp-name" className="mb-2 block text-[0.65rem] font-bold tracking-[0.2em] text-ivory/60 uppercase">Nama Anda</label>
-                  <input id="rsvp-name" type="text" name="guestName" required minLength={2} maxLength={80} autoComplete="name" placeholder="Nama lengkap" className="mb-6 h-12 w-full rounded-xl border-b border-ivory/20 bg-transparent px-4 font-serif text-lg outline-none placeholder:text-ivory/30 focus:border-gold-soft text-ivory transition-colors" />
-                </>
-              ) : (
-                <>
-                  <input type="hidden" name="guestName" value={guest?.name || ''} />
-                  <label className="mb-2 block text-[0.65rem] font-bold tracking-[0.2em] text-ivory/60 uppercase">Nama Tamu</label>
-                  <div className="mb-6 flex h-12 items-center border-b border-ivory/20 px-4 font-serif text-lg text-ivory">{guest?.name || 'Tamu Undangan'}</div>
-                </>
-              )}
-              <fieldset className="mb-6">
-                <legend className="mb-3 block text-[0.65rem] font-bold tracking-[0.2em] text-ivory/60 uppercase">Konfirmasi</legend>
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { label: 'Hadir', value: 'attending' },
-                    { label: 'Maaf', value: 'declined' },
-                  ].map((option) => (
-                    <label key={option.value} className="flex h-12 cursor-pointer items-center justify-center gap-3 rounded-xl border border-ivory/20 px-4 text-xs font-bold tracking-widest uppercase text-ivory/80 has-[:checked]:border-gold-soft has-[:checked]:bg-gold-soft/10 transition-colors">
-                      <input type="radio" name="attendance" value={option.value} required className="sr-only" />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-              <label className="mb-2 block text-[0.65rem] font-bold tracking-[0.2em] text-ivory/60 uppercase">Jumlah Tamu</label>
-              <div className="relative mb-6">
-                <select name="guestCount" className="h-12 w-full appearance-none rounded-xl border border-ivory/20 bg-transparent px-4 text-sm font-medium text-ivory outline-none focus:border-gold-soft transition-colors">
-                  {Array.from({ length: guest?.maxGuests || 1 }, (_, index) => (
-                    <option key={index + 1} value={index + 1} className="bg-charcoal text-ivory">{index + 1} Orang</option>
-                  ))}
-                </select>
-                <Icon name="chevron" className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-ivory/50" />
-              </div>
-              <label className="mb-2 block text-[0.65rem] font-bold tracking-[0.2em] text-ivory/60 uppercase">Pesan</label>
-              <textarea name="message" maxLength={500} rows={3} placeholder="Doa terbaik..." className="w-full resize-none rounded-xl border border-ivory/20 bg-transparent p-4 text-sm font-light text-ivory outline-none placeholder:text-ivory/30 focus:border-gold-soft transition-colors" />
-              <button type="submit" disabled={pending || !guest} className="mt-8 flex h-12 w-full items-center justify-center gap-3 rounded-full bg-ivory text-[0.65rem] font-bold tracking-[0.2em] text-charcoal uppercase transition-colors hover:bg-gold-soft disabled:opacity-50">
-                {pending ? 'Mengirim...' : 'Kirim RSVP'}
-              </button>
-              {state.message && (
-                <p className={`mt-4 text-center text-xs font-medium tracking-wide ${state.success ? 'text-gold-soft' : 'text-red-400'}`}>{state.message}</p>
-              )}
-            </form>
+             <PopUpEffect>
+                <SectionTitle kicker="RSVP">Kehadiran Anda</SectionTitle>
+             </PopUpEffect>
+            
+            <PopUpEffect delay={150}>
+                <form action={formAction} className="mx-auto max-w-xl rounded-3xl border border-ivory/10 bg-black/40 p-6 md:p-10 backdrop-blur-xl">
+                  <input type="hidden" name="guestId" value={guest?.id || ''} />
+                  <input type="text" name="hp_catatan" tabIndex={-1} autoComplete="off" aria-hidden="true" className="sr-only" />
+                  {guest?.invitationType === 'group' ? (
+                    <>
+                      <label htmlFor="rsvp-name" className="mb-2 block text-[0.65rem] font-bold tracking-[0.2em] text-ivory/60 uppercase">Nama Anda</label>
+                      <input id="rsvp-name" type="text" name="guestName" required minLength={2} maxLength={80} autoComplete="name" placeholder="Nama lengkap" className="mb-6 h-12 w-full rounded-xl border-b border-ivory/20 bg-transparent px-4 font-serif text-lg outline-none placeholder:text-ivory/30 focus:border-gold-soft text-ivory transition-colors" />
+                    </>
+                  ) : (
+                    <>
+                      <input type="hidden" name="guestName" value={guest?.name || ''} />
+                      <label className="mb-2 block text-[0.65rem] font-bold tracking-[0.2em] text-ivory/60 uppercase">Nama Tamu</label>
+                      <div className="mb-6 flex h-12 items-center border-b border-ivory/20 px-4 font-serif text-lg text-ivory">{guest?.name || 'Tamu Undangan'}</div>
+                    </>
+                  )}
+                  <fieldset className="mb-6">
+                    <legend className="mb-3 block text-[0.65rem] font-bold tracking-[0.2em] text-ivory/60 uppercase">Konfirmasi</legend>
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        { label: 'Hadir', value: 'attending' },
+                        { label: 'Maaf', value: 'declined' },
+                      ].map((option) => (
+                        <label key={option.value} className="flex h-12 cursor-pointer items-center justify-center gap-3 rounded-xl border border-ivory/20 px-4 text-xs font-bold tracking-widest uppercase text-ivory/80 has-[:checked]:border-gold-soft has-[:checked]:bg-gold-soft/10 transition-colors">
+                          <input type="radio" name="attendance" value={option.value} required className="sr-only" />
+                          {option.label}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <label className="mb-2 block text-[0.65rem] font-bold tracking-[0.2em] text-ivory/60 uppercase">Jumlah Tamu</label>
+                  <div className="relative mb-6">
+                    <select name="guestCount" className="h-12 w-full appearance-none rounded-xl border border-ivory/20 bg-transparent px-4 text-sm font-medium text-ivory outline-none focus:border-gold-soft transition-colors">
+                      {Array.from({ length: guest?.maxGuests || 1 }, (_, index) => (
+                        <option key={index + 1} value={index + 1} className="bg-charcoal text-ivory">{index + 1} Orang</option>
+                      ))}
+                    </select>
+                    <Icon name="chevron" className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-ivory/50" />
+                  </div>
+                  <label className="mb-2 block text-[0.65rem] font-bold tracking-[0.2em] text-ivory/60 uppercase">Pesan</label>
+                  <textarea name="message" maxLength={500} rows={3} placeholder="Doa terbaik..." className="w-full resize-none rounded-xl border border-ivory/20 bg-transparent p-4 text-sm font-light text-ivory outline-none placeholder:text-ivory/30 focus:border-gold-soft transition-colors" />
+                  <button type="submit" disabled={pending || !guest} className="mt-8 flex h-12 w-full items-center justify-center gap-3 rounded-full bg-ivory text-[0.65rem] font-bold tracking-[0.2em] text-charcoal uppercase transition-colors hover:bg-gold-soft disabled:opacity-50">
+                    {pending ? 'Mengirim...' : 'Kirim RSVP'}
+                  </button>
+                  {state.message && (
+                    <p className={`mt-4 text-center text-xs font-medium tracking-wide ${state.success ? 'text-gold-soft' : 'text-red-400'}`}>{state.message}</p>
+                  )}
+                </form>
+            </PopUpEffect>
           </div>
         </section>
 
@@ -485,27 +571,31 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
              <div className="absolute inset-0 bg-black/70" />
           </div>
           <div className="relative z-10">
-            <SectionTitle kicker="Wedding Gift">Tanda Kasih</SectionTitle>
-            <p className="mx-auto -mt-6 max-w-md text-center text-xs font-light leading-relaxed text-ivory/70 mb-12">
-              Kehadiran dan doa restu Anda adalah hadiah terindah bagi kami.
-            </p>
+             <PopUpEffect>
+                <SectionTitle kicker="Wedding Gift">Tanda Kasih</SectionTitle>
+                <p className="mx-auto -mt-6 max-w-md text-center text-xs font-light leading-relaxed text-ivory/70 mb-12">
+                  Kehadiran dan doa restu Anda adalah hadiah terindah bagi kami.
+                </p>
+             </PopUpEffect>
             <div className="mx-auto grid max-w-lg gap-6">
-              {settings.bankAccounts?.map((account) => (
-                <article key={account.id || account.accountNumber} className="relative overflow-hidden rounded-3xl border border-ivory/10 bg-white/5 p-8 text-ivory backdrop-blur-md">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xl font-medium tracking-wide">{account.bank}</p>
-                      <p className="mt-1 text-[0.55rem] font-bold tracking-[0.2em] text-gold-soft uppercase">Digital Envelope</p>
-                    </div>
-                  </div>
-                  <p className="mt-8 font-serif text-2xl tracking-[0.1em]">{account.accountNumber}</p>
-                  <div className="mt-4 flex items-end justify-between">
-                    <p className="text-[0.65rem] font-medium tracking-[0.15em] text-ivory/80 uppercase">{account.accountName}</p>
-                    <button type="button" onClick={() => copyText(account.accountNumber, account.accountNumber)} className="grid size-10 place-items-center rounded-full border border-ivory/30 transition-colors hover:bg-ivory hover:text-charcoal" aria-label={`Salin nomor rekening ${account.bank}`}>
-                      <Icon name={copied === account.accountNumber ? 'check' : 'copy'} className="size-4" />
-                    </button>
-                  </div>
-                </article>
+              {settings.bankAccounts?.map((account, index) => (
+                <PopUpEffect key={account.id || account.accountNumber} delay={index * 150}>
+                    <article className="relative overflow-hidden rounded-3xl border border-ivory/10 bg-white/5 p-8 text-ivory backdrop-blur-md">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-xl font-medium tracking-wide">{account.bank}</p>
+                          <p className="mt-1 text-[0.55rem] font-bold tracking-[0.2em] text-gold-soft uppercase">Digital Envelope</p>
+                        </div>
+                      </div>
+                      <p className="mt-8 font-serif text-2xl tracking-[0.1em]">{account.accountNumber}</p>
+                      <div className="mt-4 flex items-end justify-between">
+                        <p className="text-[0.65rem] font-medium tracking-[0.15em] text-ivory/80 uppercase">{account.accountName}</p>
+                        <button type="button" onClick={() => copyText(account.accountNumber, account.accountNumber)} className="grid size-10 place-items-center rounded-full border border-ivory/30 transition-colors hover:bg-ivory hover:text-charcoal" aria-label={`Salin nomor rekening ${account.bank}`}>
+                          <Icon name={copied === account.accountNumber ? 'check' : 'copy'} className="size-4" />
+                        </button>
+                      </div>
+                    </article>
+                </PopUpEffect>
               ))}
             </div>
           </div>
@@ -513,17 +603,19 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
 
         {/* 9. FOOTER */}
         <footer className="bg-[#111] px-6 py-24 text-center text-ivory snap-start">
-          <div className="mx-auto mb-8 grid size-16 place-items-center rounded-full border border-ivory/20 font-serif text-xl text-ivory/80">
-            D<span className="mx-1 text-sm italic text-gold-soft">&amp;</span>W
-          </div>
-          <p className="font-serif text-3xl leading-snug font-medium">
-            Merangkai <br /> Cerita
-          </p>
-          <p className="mt-6 text-[0.65rem] text-gold-soft font-bold tracking-[0.2em] uppercase">{settings.hashtag}</p>
-          <div className="mx-auto my-12 h-px w-12 bg-ivory/20" />
-          <p className="text-[0.55rem] font-bold tracking-[0.2em] text-ivory/30 uppercase">
-            © 2026 Dina Yuliarty & Wirahilman
-          </p>
+           <PopUpEffect>
+              <div className="mx-auto mb-8 grid size-16 place-items-center rounded-full border border-ivory/20 font-serif text-xl text-ivory/80">
+                D<span className="mx-1 text-sm italic text-gold-soft">&amp;</span>W
+              </div>
+              <p className="font-serif text-3xl leading-snug font-medium">
+                Merangkai <br /> Cerita
+              </p>
+              <p className="mt-6 text-[0.65rem] text-gold-soft font-bold tracking-[0.2em] uppercase">{settings.hashtag}</p>
+              <div className="mx-auto my-12 h-px w-12 bg-ivory/20" />
+              <p className="text-[0.55rem] font-bold tracking-[0.2em] text-ivory/30 uppercase">
+                © 2026 Dina Yuliarty & Wirahilman
+              </p>
+           </PopUpEffect>
         </footer>
       </div>
 
