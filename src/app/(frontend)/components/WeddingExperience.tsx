@@ -5,7 +5,7 @@ import { useActionState, useEffect, useMemo, useRef, useState } from 'react'
 import { submitRSVP, type RSVPState } from '../actions'
 import { useMusicPlayer, type MusicTrack } from './useMusicPlayer'
 
-// --- KOMPONEN EFEK MESIN TIK (Lebih Cepat & Kursor Hilang) ---
+// --- KOMPONEN EFEK MESIN TIK ---
 function TypewriterEffect({ text, delay = 80 }: { text: string; delay?: number }) {
   const [displayedText, setDisplayedText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -13,15 +13,9 @@ function TypewriterEffect({ text, delay = 80 }: { text: string; delay?: number }
   const ref = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsTyping(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.5 }
-    )
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setIsTyping(true); observer.disconnect() }
+    }, { threshold: 0.5 })
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
   }, [])
@@ -32,10 +26,7 @@ function TypewriterEffect({ text, delay = 80 }: { text: string; delay?: number }
     const timer = setInterval(() => {
       setDisplayedText(text.slice(0, i + 1))
       i++
-      if (i >= text.length) {
-        clearInterval(timer)
-        setIsComplete(true)
-      }
+      if (i >= text.length) { clearInterval(timer); setIsComplete(true) }
     }, delay)
     return () => clearInterval(timer)
   }, [text, delay, isTyping])
@@ -43,14 +34,12 @@ function TypewriterEffect({ text, delay = 80 }: { text: string; delay?: number }
   return (
     <span ref={ref} className="inline-block transition-opacity duration-300">
       {displayedText}
-      {!isComplete && (
-        <span className="animate-pulse border-r-[1.5px] border-current ml-[2px]" style={{ animationDuration: '0.8s' }}>&nbsp;</span>
-      )}
+      {!isComplete && <span className="animate-pulse border-r-[1.5px] border-current ml-[2px]" style={{ animationDuration: '0.8s' }}>&nbsp;</span>}
     </span>
   )
 }
 
-// --- KOMPONEN EFEK TULISAN TANGAN (HANDWRITING) ---
+// --- KOMPONEN EFEK TULISAN TANGAN ---
 function HandwritingEffect({ text, delay = 0, speed = 120 }: { text: string; delay?: number, speed?: number }) {
   const [visibleChars, setVisibleChars] = useState(0)
   const ref = useRef<HTMLSpanElement>(null)
@@ -58,10 +47,7 @@ function HandwritingEffect({ text, delay = 0, speed = 120 }: { text: string; del
 
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setTimeout(() => setStart(true), delay)
-        observer.disconnect()
-      }
+      if (entry.isIntersecting) { setTimeout(() => setStart(true), delay); observer.disconnect() }
     }, { threshold: 0.5 })
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
@@ -72,10 +58,7 @@ function HandwritingEffect({ text, delay = 0, speed = 120 }: { text: string; del
     let timer: NodeJS.Timeout
     timer = setInterval(() => {
       setVisibleChars((prev) => {
-        if (prev >= text.length) {
-          clearInterval(timer)
-          return prev
-        }
+        if (prev >= text.length) { clearInterval(timer); return prev }
         return prev + 1
       })
     }, speed)
@@ -85,57 +68,38 @@ function HandwritingEffect({ text, delay = 0, speed = 120 }: { text: string; del
   return (
     <span ref={ref} className="inline-block drop-shadow-md" style={{ fontFamily: "'Alex Brush', cursive", paddingRight: '0.1em' }}>
       {text.split('').map((char, index) => (
-        <span
-          key={index}
-          className="transition-opacity duration-500 ease-out"
-          style={{ opacity: index < visibleChars ? 1 : 0 }}
-        >
-          {char}
-        </span>
+        <span key={index} className="transition-opacity duration-500 ease-out" style={{ opacity: index < visibleChars ? 1 : 0 }}>{char}</span>
       ))}
     </span>
   )
 }
 
-// --- KOMPONEN EFEK POP-UP (Kunci: isReady memastikan animasi baru jalan saat halaman dibuka) ---
+// --- KOMPONEN EFEK POP-UP ---
 function PopUpEffect({ children, delay = 0, isReady = true }: { children: React.ReactNode; delay?: number; isReady?: boolean }) {
   const [isVisible, setIsVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!isReady) return; // Jangan jalankan observer jika belum ready (cover belum dibuka)
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setTimeout(() => setIsVisible(true), delay)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.2 }
-    )
+    if (!isReady) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setTimeout(() => setIsVisible(true), delay); observer.disconnect() }
+    }, { threshold: 0.2 })
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
   }, [delay, isReady])
 
   return (
-    <div
-      ref={ref}
-      className={`transition-all duration-1000 ease-out transform ${
-        isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-8'
-      }`}
-    >
+    <div ref={ref} className={`transition-all duration-1000 ease-out transform ${isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-8'}`}>
       {children}
     </div>
   )
 }
-
 
 type Media = { id: string | number; url?: string | null; alt?: string; width?: number | null; height?: number | null }
 type GalleryItem = { id: string | number; role: 'cover' | 'bride' | 'groom' | 'story' | 'gallery'; caption: string; order: number; image: string | number | Media }
 type Settings = { brideName?: string; groomName?: string; hashtag?: string; weddingDate?: string; musicEnabled?: boolean | null; verse?: string; venue?: { name?: string; address?: string; mapsUrl?: string }; people?: { brideFullName?: string; brideParents?: string; groomFullName?: string; groomParents?: string }; loveStory?: { id?: string | null; year: string; title: string; description: string }[] | null; bankAccounts?: { id?: string | null; bank: string; accountNumber: string; accountName: string }[] | null }
 type Message = { id: string | number; guestName: string; message?: string | null }
 type Guest = { id: string; name: string; partnerLabel: string; maxGuests: number; invitationType: 'personal' | 'group' }
-
 const initialRSVPState: RSVPState = { success: false, message: '' }
 
 function Icon({ name, className = 'size-5' }: { name: 'arrow' | 'calendar' | 'check' | 'chevron' | 'copy' | 'gift' | 'location' | 'music' | 'pause' | 'play' | 'x'; className?: string }) {
@@ -155,17 +119,14 @@ function Icon({ name, className = 'size-5' }: { name: 'arrow' | 'calendar' | 'ch
   return <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>
 }
 
-function getMedia(item?: GalleryItem) {
-  return item && typeof item.image === 'object' ? item.image : null
-}
-
+// --- FONT JUDUL (Handwriting Kicker + Serif Title) ---
 function SectionTitle({ kicker, children, light = true }: { kicker: string; children: React.ReactNode; light?: boolean }) {
   return (
-    <div className="mb-10 text-center relative z-10">
-      <p className={`mb-3 text-[0.65rem] font-bold tracking-[0.3em] uppercase ${light ? 'text-ivory/70' : 'text-sage'}`}>
+    <div className="mb-12 text-center relative z-10">
+      <p className={`mb-1 text-5xl font-normal drop-shadow-sm ${light ? 'text-gold-soft' : 'text-sage'}`} style={{ fontFamily: "'Alex Brush', cursive" }}>
         {kicker}
       </p>
-      <h2 className={`font-serif text-4xl leading-tight font-medium ${light ? 'text-ivory' : 'text-charcoal'}`}>
+      <h2 className={`font-serif text-3xl md:text-4xl leading-tight font-medium tracking-wide ${light ? 'text-ivory' : 'text-charcoal'}`}>
         {children}
       </h2>
     </div>
@@ -176,35 +137,37 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
   const [isOpen, setIsOpen] = useState(false)
   const [showTrack, setShowTrack] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const touchStartX = useRef<number | null>(null)
   const [copied, setCopied] = useState('')
   const [state, formAction, pending] = useActionState(submitRSVP, initialRSVPState)
 
-  const byRole = useMemo(() => ({
-    story: gallery.filter((item) => item.role === 'story'),
-  }), [gallery])
+  // FOTO ENGAGEMENT
+  const engagementPhotos = [27,37,74,79,81,82,84,92,99,102,110,111,120,372,375,377,386,387,393,397,411,413,419,428,430,438,443,449,451,457].map(n => ({
+    id: `e-${n}`, url: `/media/Copy of ARG-${n}.JPG`, alt: `Engagement ${n}`
+  }))
+  
+  // FOTO PRE-WEDDING
+  const preWeddingPhotos = ['01728','01763','01773','01789','01797','01799','01811','01846','01860','01888','01941','01952','01954','02000','02019','02031','02061','02074','02078','02105'].map(n => ({
+    id: `p-${n}`, url: `/media/MLJ${n}.jpeg`, alt: `Pre-Wedding ${n}`
+  }))
 
-  const galleryPhotos = useMemo(() => [
-    { id: 1, url: '/media/Copy of ARG-27.JPG', alt: 'Gallery 1', caption: '' },
-    { id: 2, url: '/media/Copy of ARG-37.JPG', alt: 'Gallery 2', caption: '' },
-    { id: 3, url: '/media/Copy of ARG-74.JPG', alt: 'Gallery 3', caption: '' },
-    { id: 4, url: '/media/Copy of ARG-79.JPG', alt: 'Gallery 4', caption: '' },
-    { id: 5, url: '/media/Copy of ARG-81.JPG', alt: 'Gallery 5', caption: '' },
-    { id: 6, url: '/media/Copy of ARG-82.JPG', alt: 'Gallery 6', caption: '' },
-    { id: 7, url: '/media/Copy of ARG-84.JPG', alt: 'Gallery 7', caption: '' },
-    { id: 8, url: '/media/Copy of ARG-92.JPG', alt: 'Gallery 8', caption: '' },
-  ], [])
+  const allGalleryPhotos = [...engagementPhotos, ...preWeddingPhotos]
 
   useEffect(() => {
     if (lightboxIndex === null) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setLightboxIndex(null)
-      else if (e.key === 'ArrowRight') setLightboxIndex((i) => (i === null ? i : (i + 1) % galleryPhotos.length))
-      else if (e.key === 'ArrowLeft') setLightboxIndex((i) => (i === null ? i : (i - 1 + galleryPhotos.length) % galleryPhotos.length))
+      else if (e.key === 'ArrowRight') setLightboxIndex((i) => (i === null ? i : (i + 1) % allGalleryPhotos.length))
+      else if (e.key === 'ArrowLeft') setLightboxIndex((i) => (i === null ? i : (i - 1 + allGalleryPhotos.length) % allGalleryPhotos.length))
     }
     document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', onKey)
     return () => { document.body.style.overflow = ''; window.removeEventListener('keydown', onKey) }
-  }, [lightboxIndex, galleryPhotos.length])
+  }, [lightboxIndex, allGalleryPhotos.length])
+
+  function showPhoto(step: number) {
+    setLightboxIndex((i) => (i === null ? i : (i + step + allGalleryPhotos.length) % allGalleryPhotos.length))
+  }
 
   const tracks: MusicTrack[] = useMemo(() => [{ title: 'JKT48 - Rapsodi', url: '/media/JKT48_Rapsodi.mp3' }], [])
   const player = useMusicPlayer(tracks, { onTrackStart: () => setShowTrack(true) })
@@ -268,6 +231,9 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
     return (fullName || fallback).split(',')[0].trim();
   }
 
+  // Fallback Foto Story (Poin 2)
+  const storyFallbackImages = ['/media/MLJ01763.jpeg', '/media/MLJ01789.jpeg', '/media/MLJ01797.jpeg', '/media/MLJ01811.jpeg']
+
   return (
     <main className="bg-charcoal text-ivory selection:bg-gold-soft selection:text-charcoal font-sans">
       <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap');` }} />
@@ -287,7 +253,6 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
             <span className="h-[2px] w-12 bg-gold-soft/80 mt-1" />
           </div>
           <div className="min-h-[160px] flex flex-col justify-center">
-            {/* EFEK HANDWRITING UNTUK NAMA */}
             <h1 className="text-6xl md:text-7xl leading-[1.2] font-medium tracking-normal drop-shadow-md text-ivory">
               <HandwritingEffect text={cleanName(settings.brideName, 'Dina Yuliarty')} delay={1200} speed={120} /> <br />
               <span className="font-serif text-3xl italic text-gold-soft my-1 block">&amp;</span>
@@ -312,21 +277,20 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
       {/* ================= CONTENT INVITATION ================= */}
       <div id="invitation" className={`transition-opacity duration-1000 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
         
-        {/* 1. AYAT SUCI (DARK OVERLAY & POP-UP) */}
+        {/* 1. AYAT SUCI (POIN 1: whitespace-pre-line) */}
         <section className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 text-center snap-start">
           <div className="absolute inset-0 z-0">
             <Image src="/media/MLJ01773.jpeg" alt="Verse" fill sizes="100vw" quality={75} className="object-cover" />
             <div className="absolute inset-0 bg-black/60" />
           </div>
-          <div className="relative z-10 p-6 max-w-md">
-            {/* Mengunci Pop-Up sampai halaman dibuka (isReady={isOpen}) */}
+          <div className="relative z-10 p-6 max-w-lg">
             <PopUpEffect delay={200} isReady={isOpen}>
-              <blockquote className="font-serif text-lg md:text-xl leading-relaxed italic text-ivory/90 font-light min-h-[120px]">
-                " {settings.verse || 'Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang. Sesungguhnya pada yang demikian itu benar-benar terdapat tanda-tanda (kebesaran Allah) bagi kaum yang berpikir.'} "
+              <blockquote className="font-serif text-lg md:text-xl leading-relaxed italic text-ivory/90 font-light min-h-[120px] whitespace-pre-line drop-shadow-md">
+                "{settings.verse || 'Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri,\n\nagar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang.\n\nSesungguhnya pada yang demikian itu benar-benar terdapat tanda-tanda (kebesaran Allah) bagi kaum yang berpikir.'}"
               </blockquote>
             </PopUpEffect>
             <PopUpEffect delay={400} isReady={isOpen}>
-              <p className="mt-8 text-[0.65rem] font-bold tracking-[0.25em] text-gold-soft uppercase">
+              <p className="mt-10 text-[0.65rem] font-bold tracking-[0.25em] text-gold-soft uppercase">
                 QS. Ar-Rum : 21
               </p>
             </PopUpEffect>
@@ -371,7 +335,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 4. OUR LOVE STORY */}
+        {/* 4. OUR LOVE STORY (POIN 2: FOTO OTOMATIS) */}
         <section className="relative overflow-hidden px-6 py-28 snap-start">
           <div className="absolute inset-0 z-0">
              <Image src="/media/MLJ01954.jpeg" alt="Love Story" fill sizes="100vw" quality={60} className="object-cover" />
@@ -384,14 +348,13 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
             <div className="relative mx-auto max-w-xl">
               <div className="absolute top-3 bottom-3 left-[2.75rem] w-px bg-gold-soft/30 md:left-1/2" />
               {settings.loveStory?.map((story, index) => {
-                const storyMedia = getMedia(byRole.story[index % Math.max(1, byRole.story.length)])
+                // Gunakan fallback image jika di CMS belum ada foto
+                const imageUrl = storyFallbackImages[index % storyFallbackImages.length]
                 return (
                   <PopUpEffect key={story.id || story.year} delay={index * 100} isReady={isOpen}>
                     <article className={`relative mb-14 grid grid-cols-[5.5rem_1fr] gap-6 md:grid-cols-2 ${index % 2 ? 'md:[&>*:last-child]:col-start-1 md:[&>*:last-child]:row-start-1' : ''}`}>
                       <div className={`relative z-10 size-[5.5rem] overflow-hidden rounded-full border border-ivory/20 bg-charcoal shadow-xl ${index % 2 ? 'md:ml-5' : 'md:ml-auto md:mr-5'}`}>
-                        {storyMedia?.url && (
-                          <Image src={storyMedia.url} alt={storyMedia.alt || story.title} fill sizes="88px" className="object-cover" />
-                        )}
+                        <Image src={imageUrl} alt={story.title} fill sizes="88px" className="object-cover" />
                       </div>
                       <div className={`pt-2 md:px-6 ${index % 2 ? 'md:text-right' : ''}`}>
                         <p className="text-[0.65rem] font-bold tracking-[0.2em] text-gold-soft uppercase">{story.year}</p>
@@ -406,7 +369,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 5. SAVE THE DATE (DENGAN JADWAL AKAD & RESEPSI DIKEMBALIKAN) */}
+        {/* 5. SAVE THE DATE */}
         <section className="relative overflow-hidden bg-charcoal px-6 py-28 text-ivory snap-start flex flex-col items-center justify-center min-h-svh">
           <div className="absolute inset-0 z-0">
              <Image src="/media/MLJ01952.jpeg" alt="Save the Date" fill sizes="100vw" quality={60} className="object-cover" />
@@ -415,10 +378,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           <div className="relative z-10 w-full max-w-4xl text-center">
             
             <PopUpEffect isReady={isOpen}>
-                <h2 className="font-serif text-3xl leading-tight font-medium mb-1 uppercase tracking-widest text-ivory/70 text-[0.65rem]">
-                  Save The Date
-                </h2>
-                <p className="font-serif text-4xl mb-12 text-ivory">Hari yang kami nanti</p>
+                <SectionTitle kicker="Save The Date">Hari yang kami nanti</SectionTitle>
             </PopUpEffect>
 
             <PopUpEffect delay={150} isReady={isOpen}>
@@ -434,7 +394,6 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
                 </div>
             </PopUpEffect>
 
-            {/* KOTAK AKAD & RESEPSI */}
             <div className="grid md:grid-cols-2 gap-6 mb-16">
                <PopUpEffect delay={300} isReady={isOpen}>
                   <div className="border border-ivory/20 bg-black/30 backdrop-blur-md rounded-3xl p-8 text-center h-full">
@@ -475,34 +434,48 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 6. OUR GALLERY */}
-        {galleryPhotos.length > 0 && (
-          <section className="bg-[#1a1a1a] py-28 px-4 md:px-10 snap-start">
-             <PopUpEffect isReady={isOpen}>
-                <SectionTitle kicker="Our Moment">Terekam dalam waktu</SectionTitle>
-             </PopUpEffect>
-            <div className="columns-2 md:columns-3 gap-4 space-y-4 max-w-5xl mx-auto">
-              {galleryPhotos.map((photo, index) => (
-                <PopUpEffect key={photo.id} delay={index * 50} isReady={isOpen}>
-                   <div className="relative break-inside-avoid cursor-pointer overflow-hidden rounded-xl group" onClick={() => setLightboxIndex(index)}>
-                     <Image
-                       src={photo.url}
-                       alt={photo.alt}
-                       width={500}
-                       height={700}
-                       sizes="(max-width: 768px) 50vw, 33vw"
-                       quality={75}
-                       className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
-                     />
-                     <div className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/20" />
-                   </div>
-                </PopUpEffect>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* 6. OUR GALLERY (POIN 7: ENGAGEMENT & PRE-WEDDING) */}
+        <section className="bg-[#1a1a1a] py-28 px-4 md:px-10 snap-start">
+           <PopUpEffect isReady={isOpen}>
+              <SectionTitle kicker="Our Moment">Terekam dalam waktu</SectionTitle>
+           </PopUpEffect>
 
-        {/* 7. RSVP */}
+           {/* SECTION 1: ENGAGEMENT */}
+           <PopUpEffect delay={100} isReady={isOpen}>
+              <h3 className="text-center font-serif text-2xl text-ivory mb-8 mt-12 tracking-wide">Engagement</h3>
+           </PopUpEffect>
+          <div className="columns-2 md:columns-3 gap-4 space-y-4 max-w-5xl mx-auto mb-20">
+            {engagementPhotos.map((photo) => {
+              const index = allGalleryPhotos.findIndex(p => p.id === photo.id)
+              return (
+              <PopUpEffect key={photo.id} delay={150} isReady={isOpen}>
+                 <div className="relative break-inside-avoid cursor-pointer overflow-hidden rounded-xl group" onClick={() => setLightboxIndex(index)}>
+                   <Image src={photo.url} alt={photo.alt} width={500} height={700} sizes="(max-width: 768px) 50vw, 33vw" quality={70} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105" />
+                   <div className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/20" />
+                 </div>
+              </PopUpEffect>
+            )})}
+          </div>
+
+          {/* SECTION 2: PRE-WEDDING */}
+          <PopUpEffect delay={100} isReady={isOpen}>
+              <h3 className="text-center font-serif text-2xl text-ivory mb-8 tracking-wide">Pre-Wedding</h3>
+           </PopUpEffect>
+          <div className="columns-2 md:columns-3 gap-4 space-y-4 max-w-5xl mx-auto">
+            {preWeddingPhotos.map((photo) => {
+              const index = allGalleryPhotos.findIndex(p => p.id === photo.id)
+              return (
+              <PopUpEffect key={photo.id} delay={150} isReady={isOpen}>
+                 <div className="relative break-inside-avoid cursor-pointer overflow-hidden rounded-xl group" onClick={() => setLightboxIndex(index)}>
+                   <Image src={photo.url} alt={photo.alt} width={500} height={700} sizes="(max-width: 768px) 50vw, 33vw" quality={70} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105" />
+                   <div className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/20" />
+                 </div>
+              </PopUpEffect>
+            )})}
+          </div>
+        </section>
+
+        {/* 7. RSVP (POIN 4: TIDAK HADIR) */}
         <section className="relative overflow-hidden px-6 py-28 snap-start">
           <div className="absolute inset-0 z-0">
             <Image src="/media/MLJ01728.jpeg" alt="RSVP" fill sizes="100vw" quality={60} className="object-cover" />
@@ -534,9 +507,9 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
                     <div className="grid grid-cols-2 gap-4">
                       {[
                         { label: 'Hadir', value: 'attending' },
-                        { label: 'Maaf', value: 'declined' },
+                        { label: 'Tidak Hadir', value: 'declined' },
                       ].map((option) => (
-                        <label key={option.value} className="flex h-12 cursor-pointer items-center justify-center gap-3 rounded-xl border border-ivory/20 px-4 text-xs font-bold tracking-widest uppercase text-ivory/80 has-[:checked]:border-gold-soft has-[:checked]:bg-gold-soft/10 transition-colors">
+                        <label key={option.value} className="flex h-12 cursor-pointer items-center justify-center gap-3 rounded-xl border border-ivory/20 px-4 text-[0.65rem] font-bold tracking-widest uppercase text-ivory/80 has-[:checked]:border-gold-soft has-[:checked]:bg-gold-soft/10 transition-colors">
                           <input type="radio" name="attendance" value={option.value} required className="sr-only" />
                           {option.label}
                         </label>
@@ -565,7 +538,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 8. WEDDING GIFT */}
+        {/* 8. WEDDING GIFT (POIN 5: FONT SANS-SERIF) */}
         <section className="relative overflow-hidden px-6 py-28 snap-start">
           <div className="absolute inset-0 z-0">
              <Image src="/media/MLJ02074.jpeg" alt="Wedding Gift" fill sizes="100vw" quality={60} className="object-cover" />
@@ -588,7 +561,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
                           <p className="mt-1 text-[0.55rem] font-bold tracking-[0.2em] text-gold-soft uppercase">Digital Envelope</p>
                         </div>
                       </div>
-                      <p className="mt-8 font-serif text-2xl tracking-[0.1em]">{account.accountNumber}</p>
+                      <p className="mt-8 font-sans text-xl font-semibold tracking-widest text-ivory">{account.accountNumber}</p>
                       <div className="mt-4 flex items-end justify-between">
                         <p className="text-[0.65rem] font-medium tracking-[0.15em] text-ivory/80 uppercase">{account.accountName}</p>
                         <button type="button" onClick={() => copyText(account.accountNumber, account.accountNumber)} className="grid size-10 place-items-center rounded-full border border-ivory/30 transition-colors hover:bg-ivory hover:text-charcoal" aria-label={`Salin nomor rekening ${account.bank}`}>
@@ -620,24 +593,41 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
         </footer>
       </div>
 
+      {/* ================= LIGHTBOX GALLERY (POIN 3: Z-Index, Swipe, Animation) ================= */}
+      {lightboxIndex !== null && allGalleryPhotos[lightboxIndex] && (
+        <div 
+          className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-black/95 backdrop-blur-lg animate-in fade-in duration-300"
+          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX }}
+          onTouchEnd={(e) => {
+            if (touchStartX.current === null) return
+            const delta = e.changedTouches[0].clientX - touchStartX.current
+            if (Math.abs(delta) > 50) showPhoto(delta > 0 ? -1 : 1)
+            touchStartX.current = null
+          }}
+          onClick={() => setLightboxIndex(null)}
+        >
+          {/* Tombol X dengan z-[90] agar tidak tertutup gambar */}
+          <button type="button" autoFocus onClick={() => setLightboxIndex(null)} className="absolute top-6 right-6 z-[90] grid size-12 place-items-center rounded-full bg-white/10 text-ivory hover:bg-white/20 transition-colors shadow-lg">
+            <Icon name="x" className="size-5" />
+          </button>
+          
+          <div className="relative h-[85vh] w-full max-w-5xl px-4 transition-opacity duration-300" onClick={(e) => e.stopPropagation()}>
+            <Image src={allGalleryPhotos[lightboxIndex].url} alt={allGalleryPhotos[lightboxIndex].alt} fill sizes="100vw" quality={90} className="object-contain" priority />
+          </div>
+          
+          {/* Indikator Swiper di Bawah */}
+          <div className="absolute bottom-6 text-ivory/50 text-xs font-bold tracking-widest z-[90]">
+            {lightboxIndex + 1} / {allGalleryPhotos.length}
+          </div>
+        </div>
+      )}
+
       {/* ================= MUSIC PLAYER ================= */}
       {player.hasTracks && (
         <div className="fixed right-5 bottom-5 z-[60] flex items-center gap-3">
           <button type="button" onClick={() => { player.toggle(); setShowTrack(true); }} className={`grid size-12 place-items-center rounded-full bg-ivory/10 text-ivory backdrop-blur-md border border-ivory/20 transition-all hover:bg-ivory hover:text-charcoal ${player.playing ? 'animate-pulse' : ''}`} aria-label={player.playing ? 'Jeda musik' : 'Putar musik'}>
             <Icon name={player.playing ? 'pause' : 'play'} className="size-4" />
           </button>
-        </div>
-      )}
-
-      {/* ================= LIGHTBOX GALLERY ================= */}
-      {lightboxIndex !== null && galleryPhotos[lightboxIndex] && (
-        <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-black/95 backdrop-blur-lg" onClick={() => setLightboxIndex(null)}>
-          <button type="button" autoFocus onClick={() => setLightboxIndex(null)} className="absolute top-6 right-6 grid size-10 place-items-center rounded-full bg-white/10 text-ivory hover:bg-white/20 transition-colors">
-            <Icon name="x" className="size-4" />
-          </button>
-          <div className="relative h-[85vh] w-full max-w-5xl px-4" onClick={(e) => e.stopPropagation()}>
-            <Image src={galleryPhotos[lightboxIndex].url} alt={galleryPhotos[lightboxIndex].alt} fill sizes="100vw" quality={90} className="object-contain" />
-          </div>
         </div>
       )}
     </main>
