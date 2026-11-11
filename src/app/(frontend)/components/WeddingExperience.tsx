@@ -5,10 +5,11 @@ import { useActionState, useEffect, useMemo, useRef, useState } from 'react'
 import { submitRSVP, type RSVPState } from '../actions'
 import { useMusicPlayer, type MusicTrack } from './useMusicPlayer'
 
-// --- KOMPONEN EFEK MESIN TIK (TYPEWRITER) ---
-function TypewriterEffect({ text, delay = 100 }: { text: string; delay?: number }) {
+// --- KOMPONEN EFEK MESIN TIK (Lebih pelan & kursor hilang) ---
+function TypewriterEffect({ text, delay = 150 }: { text: string; delay?: number }) {
   const [displayedText, setDisplayedText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
   const ref = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
@@ -31,15 +32,53 @@ function TypewriterEffect({ text, delay = 100 }: { text: string; delay?: number 
     const timer = setInterval(() => {
       setDisplayedText(text.slice(0, i + 1))
       i++
-      if (i >= text.length) clearInterval(timer)
+      if (i >= text.length) {
+        clearInterval(timer)
+        setIsComplete(true) // Menghilangkan kursor saat selesai
+      }
     }, delay)
     return () => clearInterval(timer)
   }, [text, delay, isTyping])
 
   return (
-    <span ref={ref} className="inline-block">
+    <span ref={ref} className="inline-block transition-opacity duration-300">
       {displayedText}
-      <span className="animate-pulse border-r-2 border-current ml-1" style={{ animationDuration: '0.8s' }}>&nbsp;</span>
+      {!isComplete && (
+        <span className="animate-pulse border-r-[1.5px] border-current ml-[2px]" style={{ animationDuration: '0.8s' }}>&nbsp;</span>
+      )}
+    </span>
+  )
+}
+
+// --- KOMPONEN EFEK TULISAN TANGAN (HANDWRITING) ---
+function HandwritingEffect({ text, delay = 0, duration = 2.5 }: { text: string; delay?: number, duration?: number }) {
+  const [start, setStart] = useState(false)
+  const ref = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => setStart(true), delay)
+        observer.disconnect()
+      }
+    }, { threshold: 0.5 })
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [delay])
+
+  return (
+    <span 
+      ref={ref} 
+      className="inline-block overflow-hidden whitespace-nowrap align-bottom drop-shadow-sm" 
+      style={{
+        maxWidth: start ? '100%' : '0%',
+        transition: `max-width ${duration}s cubic-bezier(0.4, 0, 0.2, 1)`,
+        fontFamily: "'Alex Brush', cursive",
+        paddingRight: '0.1em',
+        paddingBottom: '0.2em'
+      }}
+    >
+      {text}
     </span>
   )
 }
@@ -90,33 +129,23 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
   const [isOpen, setIsOpen] = useState(false)
   const [showTrack, setShowTrack] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const touchStartX = useRef<number | null>(null)
   const [copied, setCopied] = useState('')
   const [state, formAction, pending] = useActionState(submitRSVP, initialRSVPState)
 
   const byRole = useMemo(() => ({
     story: gallery.filter((item) => item.role === 'story'),
-    gallery: gallery.filter((item) => item.role === 'gallery'),
   }), [gallery])
 
-  const manualGalleryPhotos = [
-    { id: 1, url: '/media/ARG-27.JPG', alt: 'Gallery 1', caption: '' },
-    { id: 2, url: '/media/ARG-37.JPG', alt: 'Gallery 2', caption: '' },
-    { id: 3, url: '/media/ARG-74.JPG', alt: 'Gallery 3', caption: '' },
-    { id: 4, url: '/media/ARG-79.JPG', alt: 'Gallery 4', caption: '' },
-    { id: 5, url: '/media/ARG-81.JPG', alt: 'Gallery 5', caption: '' },
-    { id: 6, url: '/media/ARG-82.JPG', alt: 'Gallery 6', caption: '' },
-    { id: 7, url: '/media/ARG-84.JPG', alt: 'Gallery 7', caption: '' },
-    { id: 8, url: '/media/ARG-92.JPG', alt: 'Gallery 8', caption: '' },
-  ]
-
-  const galleryPhotos = useMemo(() => {
-    const cmsPhotos = byRole.gallery.flatMap((item) => {
-      const media = getMedia(item)
-      return media?.url ? [{ id: item.id, url: media.url, alt: media.alt || item.caption || 'Foto', caption: item.caption }] : []
-    })
-    return cmsPhotos.length > 0 ? cmsPhotos : manualGalleryPhotos
-  }, [byRole.gallery])
+  const galleryPhotos = useMemo(() => [
+    { id: 1, url: '/media/Copy of ARG-27.JPG', alt: 'Gallery 1', caption: '' },
+    { id: 2, url: '/media/Copy of ARG-37.JPG', alt: 'Gallery 2', caption: '' },
+    { id: 3, url: '/media/Copy of ARG-74.JPG', alt: 'Gallery 3', caption: '' },
+    { id: 4, url: '/media/Copy of ARG-79.JPG', alt: 'Gallery 4', caption: '' },
+    { id: 5, url: '/media/Copy of ARG-81.JPG', alt: 'Gallery 5', caption: '' },
+    { id: 6, url: '/media/Copy of ARG-82.JPG', alt: 'Gallery 6', caption: '' },
+    { id: 7, url: '/media/Copy of ARG-84.JPG', alt: 'Gallery 7', caption: '' },
+    { id: 8, url: '/media/Copy of ARG-92.JPG', alt: 'Gallery 8', caption: '' },
+  ], [])
 
   useEffect(() => {
     if (lightboxIndex === null) return
@@ -130,12 +159,27 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
     return () => { document.body.style.overflow = ''; window.removeEventListener('keydown', onKey) }
   }, [lightboxIndex, galleryPhotos.length])
 
-  function showPhoto(step: number) {
-    setLightboxIndex((i) => (i === null ? i : (i + step + galleryPhotos.length) % galleryPhotos.length))
-  }
-
   const tracks: MusicTrack[] = useMemo(() => [{ title: 'JKT48 - Rapsodi', url: '/media/JKT48_Rapsodi.mp3' }], [])
   const player = useMusicPlayer(tracks, { onTrackStart: () => setShowTrack(true) })
+
+  // --- HACK AUTOPLAY MUSIK ---
+  // Akan memicu musik saat tamu menyentuh/scroll layar untuk pertama kalinya
+  useEffect(() => {
+    const initAudio = () => {
+      if (!player.playing) player.start()
+      document.removeEventListener('click', initAudio)
+      document.removeEventListener('touchstart', initAudio)
+      document.removeEventListener('scroll', initAudio)
+    }
+    document.addEventListener('click', initAudio, { once: true })
+    document.addEventListener('touchstart', initAudio, { once: true })
+    document.addEventListener('scroll', initAudio, { once: true })
+    return () => {
+      document.removeEventListener('click', initAudio)
+      document.removeEventListener('touchstart', initAudio)
+      document.removeEventListener('scroll', initAudio)
+    }
+  }, [player])
 
   const eventDate = new Date(settings.weddingDate || '2026-12-26T01:00:00.000Z')
   const dateParts = (options: Intl.DateTimeFormatOptions) => Object.fromEntries(new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', ...options }).formatToParts(eventDate).map((part): [string, string] => [part.type, part.value]))
@@ -165,7 +209,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
 
   function openInvitation() {
     setIsOpen(true)
-    player.start()
+    if (!player.playing) player.start()
     window.setTimeout(() => { document.querySelector('#invitation')?.scrollIntoView({ behavior: 'smooth' }) }, 450)
   }
 
@@ -175,9 +219,15 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
     window.setTimeout(() => setCopied(''), 1800)
   }
 
+  const cleanName = (fullName: string | undefined, fallback: string) => {
+    return (fullName || fallback).split(',')[0].trim();
+  }
+
   return (
     <main className="bg-charcoal text-ivory selection:bg-gold-soft selection:text-charcoal font-sans">
-      
+      {/* Inject Font Cursive untuk Handwriting */}
+      <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap');` }} />
+
       {/* ================= COVER PAGE ================= */}
       <section className={`fixed inset-0 z-50 overflow-hidden bg-charcoal transition-all duration-[1200ms] ease-in-out ${isOpen ? 'pointer-events-none -translate-y-full opacity-0' : ''}`}>
         <div className="absolute inset-0 z-0">
@@ -188,17 +238,20 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
         </video>
         <div className="absolute inset-0 z-0 bg-gradient-to-b from-charcoal/60 via-charcoal/20 to-charcoal/95" />
         <div className="relative z-10 flex min-h-svh flex-col items-center justify-between px-6 py-16 text-center text-ivory">
-          <div className="flex flex-col items-center gap-2 text-[0.65rem] font-bold tracking-[0.3em] uppercase opacity-90 mt-10">
-            <span>The Wedding of</span>
-            <span className="h-[2px] w-12 bg-gold-soft/80" />
+          <div className="flex flex-col items-center gap-2 text-[0.65rem] font-bold tracking-[0.3em] uppercase opacity-90 mt-10 min-h-[30px]">
+            <TypewriterEffect text="The Wedding of" delay={120} />
+            <span className="h-[2px] w-12 bg-gold-soft/80 mt-1" />
           </div>
-          <div>
-            <h1 className="font-serif text-5xl md:text-6xl leading-[1.1] font-medium tracking-wide drop-shadow-md">
-              {settings.brideName || 'Dina'} <br />
+          <div className="min-h-[160px] flex flex-col justify-center">
+            {/* EFEK HANDWRITING UNTUK NAMA */}
+            <h1 className="text-6xl md:text-7xl leading-[1.2] font-medium tracking-normal drop-shadow-md text-ivory">
+              <HandwritingEffect text={cleanName(settings.brideName, 'Dina Yuliarty')} delay={2000} duration={2.5} /> <br />
               <span className="font-serif text-3xl italic text-gold-soft my-1 block">&amp;</span>
-              {settings.groomName || 'Wira'}
+              <HandwritingEffect text={cleanName(settings.groomName, 'Wirahilman')} delay={4500} duration={2.5} />
             </h1>
-            <p className="mt-8 text-[0.7rem] tracking-[0.3em] uppercase opacity-80 font-medium">{coverDateText}</p>
+            <p className="mt-8 text-[0.7rem] tracking-[0.3em] uppercase opacity-80 font-medium min-h-[20px]">
+              <TypewriterEffect text={coverDateText} delay={180} />
+            </p>
           </div>
           <div className="w-full max-w-sm mb-10">
             <p className="mb-6 text-xs leading-relaxed text-ivory/70 font-medium tracking-widest uppercase">
@@ -218,13 +271,12 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
         {/* 1. AYAT SUCI (DARK OVERLAY) */}
         <section className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 text-center snap-start">
           <div className="absolute inset-0 z-0">
-            {/* Referensi 1fe738: Dark overlay, no blur */}
             <Image src="/media/MLJ01773.jpeg" alt="Verse" fill sizes="100vw" quality={75} className="object-cover" />
             <div className="absolute inset-0 bg-black/60" />
           </div>
           <div className="relative z-10 p-6 max-w-md">
-            <blockquote className="font-serif text-lg md:text-xl leading-relaxed italic text-ivory/90 font-light">
-              <TypewriterEffect text={`" ${settings.verse || 'Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri...'} "`} delay={40} />
+            <blockquote className="font-serif text-lg md:text-xl leading-relaxed italic text-ivory/90 font-light min-h-[120px]">
+              <TypewriterEffect text={`" ${settings.verse || 'Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri...'} "`} delay={80} />
             </blockquote>
             <p className="mt-8 text-[0.65rem] font-bold tracking-[0.25em] text-gold-soft uppercase">
               QS. Ar-Rum : 21
@@ -241,7 +293,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           <div className="relative z-10 w-full px-6 pb-20">
             <p className="text-[0.65rem] font-bold tracking-[0.3em] text-ivory/70 uppercase mb-2">The Bride</p>
             <h3 className="font-serif text-4xl md:text-5xl font-medium drop-shadow-md text-ivory">
-              {settings.people?.brideFullName || 'Dina Yuliana'}
+              {cleanName(settings.people?.brideFullName, 'Dina Yuliarty')}
             </h3>
             <p className="mx-auto mt-4 max-w-xs text-[0.7rem] font-medium leading-relaxed text-ivory/60 tracking-widest uppercase">
               Putri Dari <br/> <span className="text-ivory/90">{settings.people?.brideParents}</span>
@@ -258,7 +310,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           <div className="relative z-10 w-full px-6 pb-20">
             <p className="text-[0.65rem] font-bold tracking-[0.3em] text-ivory/70 uppercase mb-2">The Groom</p>
             <h3 className="font-serif text-4xl md:text-5xl font-medium drop-shadow-md text-ivory">
-              {settings.people?.groomFullName || 'Wirahilman'}
+              {cleanName(settings.people?.groomFullName, 'Wirahilman')}
             </h3>
             <p className="mx-auto mt-4 max-w-xs text-[0.7rem] font-medium leading-relaxed text-ivory/60 tracking-widest uppercase">
               Putra Dari <br/> <span className="text-ivory/90">{settings.people?.groomParents}</span>
@@ -297,7 +349,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 5. SAVE THE DATE & DRESSCODE TYPEWRITER */}
+        {/* 5. SAVE THE DATE */}
         <section className="relative overflow-hidden bg-charcoal px-6 py-28 text-ivory snap-start flex flex-col items-center justify-center min-h-svh">
           <div className="absolute inset-0 z-0">
              <Image src="/media/MLJ01952.jpeg" alt="Save the Date" fill sizes="100vw" quality={60} className="object-cover" />
@@ -322,25 +374,13 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
               ))}
             </div>
 
-            <div className="mb-16">
+            <div>
                <p className="text-[0.7rem] font-bold tracking-[0.3em] text-gold-soft uppercase mb-4">Location</p>
                <h3 className="font-serif text-2xl font-medium">{settings.venue?.name || 'Ballroom Puri Mega Hotel'}</h3>
                <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-ivory/60 font-light">{settings.venue?.address || 'Jakarta Pusat'}</p>
                <a href={settings.venue?.mapsUrl} target="_blank" rel="noreferrer" className="mt-8 inline-flex h-10 items-center justify-center rounded-full border border-ivory/40 px-8 text-[0.65rem] font-bold tracking-[0.2em] text-ivory uppercase transition-colors hover:bg-ivory hover:text-charcoal backdrop-blur-sm">
                   Google Maps
                </a>
-            </div>
-
-            {/* Referensi 1fe6da & 1fe6bf: Dresscode/Typewriting effect */}
-            <div className="pt-10 border-t border-ivory/10">
-               <p className="text-[0.7rem] font-bold tracking-[0.3em] text-gold-soft uppercase mb-4">Dresscode</p>
-               <p className="font-serif text-lg text-ivory/90 italic h-8">
-                 <TypewriterEffect text="Silakan kenakan pakaian bernuansa Hitam atau Putih." delay={60} />
-               </p>
-               <div className="flex justify-center gap-4 mt-6">
-                 <div className="w-8 h-8 rounded-full bg-black border border-white/20 shadow-lg"></div>
-                 <div className="w-8 h-8 rounded-full bg-white border border-white/20 shadow-lg"></div>
-               </div>
             </div>
           </div>
         </section>
@@ -470,7 +510,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           <p className="mt-6 text-[0.65rem] text-gold-soft font-bold tracking-[0.2em] uppercase">{settings.hashtag}</p>
           <div className="mx-auto my-12 h-px w-12 bg-ivory/20" />
           <p className="text-[0.55rem] font-bold tracking-[0.2em] text-ivory/30 uppercase">
-            © 2026 Dina & Wira
+            © 2026 Dina Yuliarty & Wirahilman
           </p>
         </footer>
       </div>
