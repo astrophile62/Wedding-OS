@@ -97,12 +97,13 @@ function HandwritingEffect({ text, delay = 0, speed = 120 }: { text: string; del
   )
 }
 
-// --- KOMPONEN EFEK POP-UP (Untuk Ayat & Konten Lain) ---
-function PopUpEffect({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+// --- KOMPONEN EFEK POP-UP (Kunci: isReady memastikan animasi baru jalan saat halaman dibuka) ---
+function PopUpEffect({ children, delay = 0, isReady = true }: { children: React.ReactNode; delay?: number; isReady?: boolean }) {
   const [isVisible, setIsVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!isReady) return; // Jangan jalankan observer jika belum ready (cover belum dibuka)
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -114,7 +115,7 @@ function PopUpEffect({ children, delay = 0 }: { children: React.ReactNode; delay
     )
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
-  }, [delay])
+  }, [delay, isReady])
 
   return (
     <div
@@ -175,7 +176,6 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
   const [isOpen, setIsOpen] = useState(false)
   const [showTrack, setShowTrack] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const touchStartX = useRef<number | null>(null)
   const [copied, setCopied] = useState('')
   const [state, formAction, pending] = useActionState(submitRSVP, initialRSVPState)
 
@@ -319,12 +319,13 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
             <div className="absolute inset-0 bg-black/60" />
           </div>
           <div className="relative z-10 p-6 max-w-md">
-            <PopUpEffect delay={100}>
+            {/* Mengunci Pop-Up sampai halaman dibuka (isReady={isOpen}) */}
+            <PopUpEffect delay={200} isReady={isOpen}>
               <blockquote className="font-serif text-lg md:text-xl leading-relaxed italic text-ivory/90 font-light min-h-[120px]">
                 " {settings.verse || 'Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang. Sesungguhnya pada yang demikian itu benar-benar terdapat tanda-tanda (kebesaran Allah) bagi kaum yang berpikir.'} "
               </blockquote>
             </PopUpEffect>
-            <PopUpEffect delay={300}>
+            <PopUpEffect delay={400} isReady={isOpen}>
               <p className="mt-8 text-[0.65rem] font-bold tracking-[0.25em] text-gold-soft uppercase">
                 QS. Ar-Rum : 21
               </p>
@@ -339,7 +340,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
             <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/20 to-charcoal/10" />
           </div>
           <div className="relative z-10 w-full px-6 pb-20">
-             <PopUpEffect>
+             <PopUpEffect isReady={isOpen}>
                 <p className="text-[0.65rem] font-bold tracking-[0.3em] text-ivory/70 uppercase mb-2">The Bride</p>
                 <h3 className="font-serif text-4xl md:text-5xl font-medium drop-shadow-md text-ivory">
                   {cleanName(settings.people?.brideFullName, 'Dina Yuliarty')}
@@ -358,7 +359,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
              <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/20 to-charcoal/10" />
           </div>
           <div className="relative z-10 w-full px-6 pb-20">
-            <PopUpEffect>
+            <PopUpEffect isReady={isOpen}>
                 <p className="text-[0.65rem] font-bold tracking-[0.3em] text-ivory/70 uppercase mb-2">The Groom</p>
                 <h3 className="font-serif text-4xl md:text-5xl font-medium drop-shadow-md text-ivory">
                   {cleanName(settings.people?.groomFullName, 'Wirahilman')}
@@ -377,7 +378,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
              <div className="absolute inset-0 bg-black/75" />
           </div>
           <div className="relative z-10">
-             <PopUpEffect>
+             <PopUpEffect isReady={isOpen}>
                 <SectionTitle kicker="Our Journey">Merangkai Cerita</SectionTitle>
              </PopUpEffect>
             <div className="relative mx-auto max-w-xl">
@@ -385,7 +386,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
               {settings.loveStory?.map((story, index) => {
                 const storyMedia = getMedia(byRole.story[index % Math.max(1, byRole.story.length)])
                 return (
-                  <PopUpEffect key={story.id || story.year} delay={index * 100}>
+                  <PopUpEffect key={story.id || story.year} delay={index * 100} isReady={isOpen}>
                     <article className={`relative mb-14 grid grid-cols-[5.5rem_1fr] gap-6 md:grid-cols-2 ${index % 2 ? 'md:[&>*:last-child]:col-start-1 md:[&>*:last-child]:row-start-1' : ''}`}>
                       <div className={`relative z-10 size-[5.5rem] overflow-hidden rounded-full border border-ivory/20 bg-charcoal shadow-xl ${index % 2 ? 'md:ml-5' : 'md:ml-auto md:mr-5'}`}>
                         {storyMedia?.url && (
@@ -413,14 +414,14 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
           <div className="relative z-10 w-full max-w-4xl text-center">
             
-            <PopUpEffect>
+            <PopUpEffect isReady={isOpen}>
                 <h2 className="font-serif text-3xl leading-tight font-medium mb-1 uppercase tracking-widest text-ivory/70 text-[0.65rem]">
                   Save The Date
                 </h2>
                 <p className="font-serif text-4xl mb-12 text-ivory">Hari yang kami nanti</p>
             </PopUpEffect>
 
-            <PopUpEffect delay={150}>
+            <PopUpEffect delay={150} isReady={isOpen}>
                 <div className="mx-auto mb-16 grid max-w-sm grid-cols-4 divide-x divide-ivory/20 border border-ivory/20 rounded-2xl bg-black/20 backdrop-blur-sm p-4">
                   {Object.entries(countdown).map(([label, value]) => (
                     <div key={label}>
@@ -435,7 +436,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
 
             {/* KOTAK AKAD & RESEPSI */}
             <div className="grid md:grid-cols-2 gap-6 mb-16">
-               <PopUpEffect delay={300}>
+               <PopUpEffect delay={300} isReady={isOpen}>
                   <div className="border border-ivory/20 bg-black/30 backdrop-blur-md rounded-3xl p-8 text-center h-full">
                      <Icon name="calendar" className="mx-auto size-6 text-gold-soft mb-4 opacity-80" />
                      <p className="text-[0.65rem] font-bold tracking-[0.2em] text-ivory/70 uppercase mb-3">
@@ -446,7 +447,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
                   </div>
                </PopUpEffect>
 
-               <PopUpEffect delay={450}>
+               <PopUpEffect delay={450} isReady={isOpen}>
                   <div className="border border-ivory/20 bg-black/30 backdrop-blur-md rounded-3xl p-8 text-center h-full">
                      <Icon name="calendar" className="mx-auto size-6 text-gold-soft mb-4 opacity-80" />
                      <p className="text-[0.65rem] font-bold tracking-[0.2em] text-ivory/70 uppercase mb-3">
@@ -458,7 +459,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
                </PopUpEffect>
             </div>
 
-            <PopUpEffect delay={600}>
+            <PopUpEffect delay={600} isReady={isOpen}>
                 <div className="bg-ivory/95 rounded-3xl p-8 text-charcoal shadow-2xl backdrop-blur-sm mx-auto max-w-2xl">
                    <Icon name="location" className="mx-auto size-6 text-charcoal opacity-70 mb-3" />
                    <h3 className="font-serif text-2xl font-bold mb-2">{settings.venue?.name || 'Ballroom Puri Mega Hotel'}</h3>
@@ -477,12 +478,12 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
         {/* 6. OUR GALLERY */}
         {galleryPhotos.length > 0 && (
           <section className="bg-[#1a1a1a] py-28 px-4 md:px-10 snap-start">
-             <PopUpEffect>
+             <PopUpEffect isReady={isOpen}>
                 <SectionTitle kicker="Our Moment">Terekam dalam waktu</SectionTitle>
              </PopUpEffect>
             <div className="columns-2 md:columns-3 gap-4 space-y-4 max-w-5xl mx-auto">
               {galleryPhotos.map((photo, index) => (
-                <PopUpEffect key={photo.id} delay={index * 50}>
+                <PopUpEffect key={photo.id} delay={index * 50} isReady={isOpen}>
                    <div className="relative break-inside-avoid cursor-pointer overflow-hidden rounded-xl group" onClick={() => setLightboxIndex(index)}>
                      <Image
                        src={photo.url}
@@ -508,11 +509,11 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
             <div className="absolute inset-0 bg-black/75" />
           </div>
           <div className="relative z-10">
-             <PopUpEffect>
+             <PopUpEffect isReady={isOpen}>
                 <SectionTitle kicker="RSVP">Kehadiran Anda</SectionTitle>
              </PopUpEffect>
             
-            <PopUpEffect delay={150}>
+            <PopUpEffect delay={150} isReady={isOpen}>
                 <form action={formAction} className="mx-auto max-w-xl rounded-3xl border border-ivory/10 bg-black/40 p-6 md:p-10 backdrop-blur-xl">
                   <input type="hidden" name="guestId" value={guest?.id || ''} />
                   <input type="text" name="hp_catatan" tabIndex={-1} autoComplete="off" aria-hidden="true" className="sr-only" />
@@ -571,7 +572,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
              <div className="absolute inset-0 bg-black/70" />
           </div>
           <div className="relative z-10">
-             <PopUpEffect>
+             <PopUpEffect isReady={isOpen}>
                 <SectionTitle kicker="Wedding Gift">Tanda Kasih</SectionTitle>
                 <p className="mx-auto -mt-6 max-w-md text-center text-xs font-light leading-relaxed text-ivory/70 mb-12">
                   Kehadiran dan doa restu Anda adalah hadiah terindah bagi kami.
@@ -579,7 +580,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
              </PopUpEffect>
             <div className="mx-auto grid max-w-lg gap-6">
               {settings.bankAccounts?.map((account, index) => (
-                <PopUpEffect key={account.id || account.accountNumber} delay={index * 150}>
+                <PopUpEffect key={account.id || account.accountNumber} delay={index * 150} isReady={isOpen}>
                     <article className="relative overflow-hidden rounded-3xl border border-ivory/10 bg-white/5 p-8 text-ivory backdrop-blur-md">
                       <div className="flex items-start justify-between">
                         <div>
@@ -603,7 +604,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
 
         {/* 9. FOOTER */}
         <footer className="bg-[#111] px-6 py-24 text-center text-ivory snap-start">
-           <PopUpEffect>
+           <PopUpEffect isReady={isOpen}>
               <div className="mx-auto mb-8 grid size-16 place-items-center rounded-full border border-ivory/20 font-serif text-xl text-ivory/80">
                 D<span className="mx-1 text-sm italic text-gold-soft">&amp;</span>W
               </div>
