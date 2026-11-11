@@ -96,27 +96,19 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
 
   const byRole = useMemo(() => ({
     story: gallery.filter((item) => item.role === 'story'),
-    gallery: gallery.filter((item) => item.role === 'gallery'),
   }), [gallery])
 
-  const manualGalleryPhotos = [
-    { id: 1, url: '/media/ARG-27.JPG', alt: 'Gallery 1', caption: '' },
-    { id: 2, url: '/media/ARG-37.JPG', alt: 'Gallery 2', caption: '' },
-    { id: 3, url: '/media/ARG-74.JPG', alt: 'Gallery 3', caption: '' },
-    { id: 4, url: '/media/ARG-79.JPG', alt: 'Gallery 4', caption: '' },
-    { id: 5, url: '/media/ARG-81.JPG', alt: 'Gallery 5', caption: '' },
-    { id: 6, url: '/media/ARG-82.JPG', alt: 'Gallery 6', caption: '' },
-    { id: 7, url: '/media/ARG-84.JPG', alt: 'Gallery 7', caption: '' },
-    { id: 8, url: '/media/ARG-92.JPG', alt: 'Gallery 8', caption: '' },
-  ]
-
-  const galleryPhotos = useMemo(() => {
-    const cmsPhotos = byRole.gallery.flatMap((item) => {
-      const media = getMedia(item)
-      return media?.url ? [{ id: item.id, url: media.url, alt: media.alt || item.caption || 'Foto', caption: item.caption }] : []
-    })
-    return cmsPhotos.length > 0 ? cmsPhotos : manualGalleryPhotos
-  }, [byRole.gallery])
+  // BYPASS CMS: Menggunakan file lokal dengan awalan "Copy of" sesuai folder
+  const galleryPhotos = useMemo(() => [
+    { id: 1, url: '/media/Copy of ARG-27.JPG', alt: 'Gallery 1', caption: '' },
+    { id: 2, url: '/media/Copy of ARG-37.JPG', alt: 'Gallery 2', caption: '' },
+    { id: 3, url: '/media/Copy of ARG-74.JPG', alt: 'Gallery 3', caption: '' },
+    { id: 4, url: '/media/Copy of ARG-79.JPG', alt: 'Gallery 4', caption: '' },
+    { id: 5, url: '/media/Copy of ARG-81.JPG', alt: 'Gallery 5', caption: '' },
+    { id: 6, url: '/media/Copy of ARG-82.JPG', alt: 'Gallery 6', caption: '' },
+    { id: 7, url: '/media/Copy of ARG-84.JPG', alt: 'Gallery 7', caption: '' },
+    { id: 8, url: '/media/Copy of ARG-92.JPG', alt: 'Gallery 8', caption: '' },
+  ], [])
 
   useEffect(() => {
     if (lightboxIndex === null) return
@@ -175,6 +167,11 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
     window.setTimeout(() => setCopied(''), 1800)
   }
 
+  // Helper untuk menghilangkan gelar (memotong teks setelah tanda koma)
+  const cleanName = (fullName: string | undefined, fallback: string) => {
+    return (fullName || fallback).split(',')[0].trim();
+  }
+
   return (
     <main className="bg-charcoal text-ivory selection:bg-gold-soft selection:text-charcoal font-sans">
       
@@ -192,11 +189,12 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
             <span>The Wedding of</span>
             <span className="h-[2px] w-12 bg-gold-soft/80" />
           </div>
-          <div>
+          <div className="min-h-[140px] flex flex-col justify-center">
+            {/* TYPEWRITER EFFECT DI NAMA MEMPELAI */}
             <h1 className="font-serif text-5xl md:text-6xl leading-[1.1] font-medium tracking-wide drop-shadow-md">
-              {settings.brideName || 'Dina'} <br />
+              <TypewriterEffect text={cleanName(settings.brideName, 'Dina Yuliarty')} delay={150} /> <br />
               <span className="font-serif text-3xl italic text-gold-soft my-1 block">&amp;</span>
-              {settings.groomName || 'Wira'}
+              <TypewriterEffect text={cleanName(settings.groomName, 'Wirahilman')} delay={150} />
             </h1>
             <p className="mt-8 text-[0.7rem] tracking-[0.3em] uppercase opacity-80 font-medium">{coverDateText}</p>
           </div>
@@ -218,13 +216,12 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
         {/* 1. AYAT SUCI (DARK OVERLAY) */}
         <section className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 text-center snap-start">
           <div className="absolute inset-0 z-0">
-            {/* Referensi 1fe738: Dark overlay, no blur */}
             <Image src="/media/MLJ01773.jpeg" alt="Verse" fill sizes="100vw" quality={75} className="object-cover" />
             <div className="absolute inset-0 bg-black/60" />
           </div>
           <div className="relative z-10 p-6 max-w-md">
             <blockquote className="font-serif text-lg md:text-xl leading-relaxed italic text-ivory/90 font-light">
-              <TypewriterEffect text={`" ${settings.verse || 'Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri...'} "`} delay={40} />
+              " {settings.verse || 'Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri...'} "
             </blockquote>
             <p className="mt-8 text-[0.65rem] font-bold tracking-[0.25em] text-gold-soft uppercase">
               QS. Ar-Rum : 21
@@ -241,7 +238,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           <div className="relative z-10 w-full px-6 pb-20">
             <p className="text-[0.65rem] font-bold tracking-[0.3em] text-ivory/70 uppercase mb-2">The Bride</p>
             <h3 className="font-serif text-4xl md:text-5xl font-medium drop-shadow-md text-ivory">
-              {settings.people?.brideFullName || 'Dina Yuliana'}
+              {cleanName(settings.people?.brideFullName, 'Dina Yuliarty')}
             </h3>
             <p className="mx-auto mt-4 max-w-xs text-[0.7rem] font-medium leading-relaxed text-ivory/60 tracking-widest uppercase">
               Putri Dari <br/> <span className="text-ivory/90">{settings.people?.brideParents}</span>
@@ -258,7 +255,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           <div className="relative z-10 w-full px-6 pb-20">
             <p className="text-[0.65rem] font-bold tracking-[0.3em] text-ivory/70 uppercase mb-2">The Groom</p>
             <h3 className="font-serif text-4xl md:text-5xl font-medium drop-shadow-md text-ivory">
-              {settings.people?.groomFullName || 'Wirahilman'}
+              {cleanName(settings.people?.groomFullName, 'Wirahilman')}
             </h3>
             <p className="mx-auto mt-4 max-w-xs text-[0.7rem] font-medium leading-relaxed text-ivory/60 tracking-widest uppercase">
               Putra Dari <br/> <span className="text-ivory/90">{settings.people?.groomParents}</span>
@@ -297,7 +294,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 5. SAVE THE DATE & DRESSCODE TYPEWRITER */}
+        {/* 5. SAVE THE DATE */}
         <section className="relative overflow-hidden bg-charcoal px-6 py-28 text-ivory snap-start flex flex-col items-center justify-center min-h-svh">
           <div className="absolute inset-0 z-0">
              <Image src="/media/MLJ01952.jpeg" alt="Save the Date" fill sizes="100vw" quality={60} className="object-cover" />
@@ -322,25 +319,13 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
               ))}
             </div>
 
-            <div className="mb-16">
+            <div>
                <p className="text-[0.7rem] font-bold tracking-[0.3em] text-gold-soft uppercase mb-4">Location</p>
                <h3 className="font-serif text-2xl font-medium">{settings.venue?.name || 'Ballroom Puri Mega Hotel'}</h3>
                <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-ivory/60 font-light">{settings.venue?.address || 'Jakarta Pusat'}</p>
                <a href={settings.venue?.mapsUrl} target="_blank" rel="noreferrer" className="mt-8 inline-flex h-10 items-center justify-center rounded-full border border-ivory/40 px-8 text-[0.65rem] font-bold tracking-[0.2em] text-ivory uppercase transition-colors hover:bg-ivory hover:text-charcoal backdrop-blur-sm">
                   Google Maps
                </a>
-            </div>
-
-            {/* Referensi 1fe6da & 1fe6bf: Dresscode/Typewriting effect */}
-            <div className="pt-10 border-t border-ivory/10">
-               <p className="text-[0.7rem] font-bold tracking-[0.3em] text-gold-soft uppercase mb-4">Dresscode</p>
-               <p className="font-serif text-lg text-ivory/90 italic h-8">
-                 <TypewriterEffect text="Silakan kenakan pakaian bernuansa Hitam atau Putih." delay={60} />
-               </p>
-               <div className="flex justify-center gap-4 mt-6">
-                 <div className="w-8 h-8 rounded-full bg-black border border-white/20 shadow-lg"></div>
-                 <div className="w-8 h-8 rounded-full bg-white border border-white/20 shadow-lg"></div>
-               </div>
             </div>
           </div>
         </section>
@@ -470,7 +455,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           <p className="mt-6 text-[0.65rem] text-gold-soft font-bold tracking-[0.2em] uppercase">{settings.hashtag}</p>
           <div className="mx-auto my-12 h-px w-12 bg-ivory/20" />
           <p className="text-[0.55rem] font-bold tracking-[0.2em] text-ivory/30 uppercase">
-            © 2026 Dina & Wira
+            © 2026 Dina Yuliarty & Wirahilman
           </p>
         </footer>
       </div>
