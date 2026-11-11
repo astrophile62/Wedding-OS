@@ -5,8 +5,8 @@ import { useActionState, useEffect, useMemo, useRef, useState } from 'react'
 import { submitRSVP, type RSVPState } from '../actions'
 import { useMusicPlayer, type MusicTrack } from './useMusicPlayer'
 
-// --- KOMPONEN EFEK MESIN TIK (Lebih pelan & kursor hilang) ---
-function TypewriterEffect({ text, delay = 150 }: { text: string; delay?: number }) {
+// --- KOMPONEN EFEK MESIN TIK (Kursor kedap-kedip lalu hilang) ---
+function TypewriterEffect({ text, delay = 100 }: { text: string; delay?: number }) {
   const [displayedText, setDisplayedText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
@@ -34,14 +34,14 @@ function TypewriterEffect({ text, delay = 150 }: { text: string; delay?: number 
       i++
       if (i >= text.length) {
         clearInterval(timer)
-        setIsComplete(true) // Menghilangkan kursor saat selesai
+        setIsComplete(true) // Hilangkan kursor saat selesai
       }
     }, delay)
     return () => clearInterval(timer)
   }, [text, delay, isTyping])
 
   return (
-    <span ref={ref} className="inline-block transition-opacity duration-300">
+    <span ref={ref} className="inline-block">
       {displayedText}
       {!isComplete && (
         <span className="animate-pulse border-r-[1.5px] border-current ml-[2px]" style={{ animationDuration: '0.8s' }}>&nbsp;</span>
@@ -50,10 +50,11 @@ function TypewriterEffect({ text, delay = 150 }: { text: string; delay?: number 
   )
 }
 
-// --- KOMPONEN EFEK TULISAN TANGAN (HANDWRITING) ---
-function HandwritingEffect({ text, delay = 0, duration = 2.5 }: { text: string; delay?: number, duration?: number }) {
-  const [start, setStart] = useState(false)
+// --- KOMPONEN EFEK TULISAN TANGAN (Muncul per huruf seperti ditulis) ---
+function HandwritingEffect({ text, delay = 0, speed = 120 }: { text: string; delay?: number, speed?: number }) {
+  const [visibleChars, setVisibleChars] = useState(0)
   const ref = useRef<HTMLSpanElement>(null)
+  const [start, setStart] = useState(false)
 
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
@@ -66,19 +67,32 @@ function HandwritingEffect({ text, delay = 0, duration = 2.5 }: { text: string; 
     return () => observer.disconnect()
   }, [delay])
 
+  useEffect(() => {
+    if (!start) return
+    let timer: NodeJS.Timeout
+    timer = setInterval(() => {
+      setVisibleChars((prev) => {
+        if (prev >= text.length) {
+          clearInterval(timer)
+          return prev
+        }
+        return prev + 1
+      })
+    }, speed)
+    return () => clearInterval(timer)
+  }, [start, text.length, speed])
+
   return (
-    <span 
-      ref={ref} 
-      className="inline-block overflow-hidden whitespace-nowrap align-bottom drop-shadow-sm" 
-      style={{
-        maxWidth: start ? '100%' : '0%',
-        transition: `max-width ${duration}s cubic-bezier(0.4, 0, 0.2, 1)`,
-        fontFamily: "'Alex Brush', cursive",
-        paddingRight: '0.1em',
-        paddingBottom: '0.2em'
-      }}
-    >
-      {text}
+    <span ref={ref} className="inline-block drop-shadow-md" style={{ fontFamily: "'Alex Brush', cursive", paddingRight: '0.1em' }}>
+      {text.split('').map((char, index) => (
+        <span
+          key={index}
+          className="transition-opacity duration-500 ease-out"
+          style={{ opacity: index < visibleChars ? 1 : 0 }}
+        >
+          {char}
+        </span>
+      ))}
     </span>
   )
 }
@@ -162,8 +176,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
   const tracks: MusicTrack[] = useMemo(() => [{ title: 'JKT48 - Rapsodi', url: '/media/JKT48_Rapsodi.mp3' }], [])
   const player = useMusicPlayer(tracks, { onTrackStart: () => setShowTrack(true) })
 
-  // --- HACK AUTOPLAY MUSIK ---
-  // Akan memicu musik saat tamu menyentuh/scroll layar untuk pertama kalinya
+  // --- HACK AUTOPLAY MUSIK (Otomatis nyala saat disentuh) ---
   useEffect(() => {
     const initAudio = () => {
       if (!player.playing) player.start()
@@ -225,7 +238,6 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
 
   return (
     <main className="bg-charcoal text-ivory selection:bg-gold-soft selection:text-charcoal font-sans">
-      {/* Inject Font Cursive untuk Handwriting */}
       <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap');` }} />
 
       {/* ================= COVER PAGE ================= */}
@@ -239,18 +251,18 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
         <div className="absolute inset-0 z-0 bg-gradient-to-b from-charcoal/60 via-charcoal/20 to-charcoal/95" />
         <div className="relative z-10 flex min-h-svh flex-col items-center justify-between px-6 py-16 text-center text-ivory">
           <div className="flex flex-col items-center gap-2 text-[0.65rem] font-bold tracking-[0.3em] uppercase opacity-90 mt-10 min-h-[30px]">
-            <TypewriterEffect text="The Wedding of" delay={120} />
+            <TypewriterEffect text="The Wedding of" delay={200} />
             <span className="h-[2px] w-12 bg-gold-soft/80 mt-1" />
           </div>
           <div className="min-h-[160px] flex flex-col justify-center">
-            {/* EFEK HANDWRITING UNTUK NAMA */}
+            {/* EFEK HANDWRITING BARU: Muncul per huruf */}
             <h1 className="text-6xl md:text-7xl leading-[1.2] font-medium tracking-normal drop-shadow-md text-ivory">
-              <HandwritingEffect text={cleanName(settings.brideName, 'Dina Yuliarty')} delay={2000} duration={2.5} /> <br />
+              <HandwritingEffect text={cleanName(settings.brideName, 'Dina Yuliarty')} delay={2200} speed={150} /> <br />
               <span className="font-serif text-3xl italic text-gold-soft my-1 block">&amp;</span>
-              <HandwritingEffect text={cleanName(settings.groomName, 'Wirahilman')} delay={4500} duration={2.5} />
+              <HandwritingEffect text={cleanName(settings.groomName, 'Wirahilman')} delay={4200} speed={150} />
             </h1>
             <p className="mt-8 text-[0.7rem] tracking-[0.3em] uppercase opacity-80 font-medium min-h-[20px]">
-              <TypewriterEffect text={coverDateText} delay={180} />
+              <TypewriterEffect text={coverDateText} delay={300} />
             </p>
           </div>
           <div className="w-full max-w-sm mb-10">
