@@ -4,16 +4,11 @@ import Image from 'next/image'
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react'
 import { submitRSVP, type RSVPState } from '../actions'
 import { useMusicPlayer, type MusicTrack } from './useMusicPlayer'
-import { Great_Vibes } from 'next/font/google'
 
-// Mengimpor font tulisan tangan eksklusif untuk nama mempelai
-const handwriting = Great_Vibes({ weight: '400', subsets: ['latin'], display: 'swap' })
-
-// --- KOMPONEN EFEK MESIN TIK (TYPEWRITER) YANG DIPERHALUS ---
-function TypewriterEffect({ text, delay = 100, startDelay = 0 }: { text: string; delay?: number; startDelay?: number }) {
+// --- KOMPONEN EFEK MESIN TIK (TYPEWRITER) ---
+function TypewriterEffect({ text, delay = 100 }: { text: string; delay?: number }) {
   const [displayedText, setDisplayedText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const [isFinished, setIsFinished] = useState(false)
   const ref = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
@@ -33,31 +28,18 @@ function TypewriterEffect({ text, delay = 100, startDelay = 0 }: { text: string;
   useEffect(() => {
     if (!isTyping) return
     let i = 0
-    let timer: NodeJS.Timeout
-    const startTimeout = setTimeout(() => {
-      timer = setInterval(() => {
-        setDisplayedText(text.slice(0, i + 1))
-        i++
-        if (i >= text.length) {
-          clearInterval(timer)
-          setIsFinished(true) // Menyembunyikan kursor (caret) setelah selesai
-        }
-      }, delay)
-    }, startDelay)
-
-    return () => {
-      clearTimeout(startTimeout)
-      if (timer) clearInterval(timer)
-    }
-  }, [text, delay, isTyping, startDelay])
+    const timer = setInterval(() => {
+      setDisplayedText(text.slice(0, i + 1))
+      i++
+      if (i >= text.length) clearInterval(timer)
+    }, delay)
+    return () => clearInterval(timer)
+  }, [text, delay, isTyping])
 
   return (
-    <span ref={ref} className="inline-block relative">
+    <span ref={ref} className="inline-block">
       {displayedText}
-      {/* Kursor berkedip yang akan hilang saat isFinished = true */}
-      {!isFinished && (
-        <span className="inline-block w-[2px] h-[1.1em] bg-current align-middle ml-[3px] animate-pulse" style={{ animationDuration: '0.8s' }}></span>
-      )}
+      <span className="animate-pulse border-r-2 border-current ml-1" style={{ animationDuration: '0.8s' }}>&nbsp;</span>
     </span>
   )
 }
@@ -108,30 +90,33 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
   const [isOpen, setIsOpen] = useState(false)
   const [showTrack, setShowTrack] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const [mountCover, setMountCover] = useState(false) // Trigger animasi handwriting
+  const touchStartX = useRef<number | null>(null)
   const [copied, setCopied] = useState('')
   const [state, formAction, pending] = useActionState(submitRSVP, initialRSVPState)
 
   const byRole = useMemo(() => ({
     story: gallery.filter((item) => item.role === 'story'),
+    gallery: gallery.filter((item) => item.role === 'gallery'),
   }), [gallery])
 
-  const galleryPhotos = useMemo(() => [
-    { id: 1, url: '/media/Copy of ARG-27.JPG', alt: 'Gallery 1', caption: '' },
-    { id: 2, url: '/media/Copy of ARG-37.JPG', alt: 'Gallery 2', caption: '' },
-    { id: 3, url: '/media/Copy of ARG-74.JPG', alt: 'Gallery 3', caption: '' },
-    { id: 4, url: '/media/Copy of ARG-79.JPG', alt: 'Gallery 4', caption: '' },
-    { id: 5, url: '/media/Copy of ARG-81.JPG', alt: 'Gallery 5', caption: '' },
-    { id: 6, url: '/media/Copy of ARG-82.JPG', alt: 'Gallery 6', caption: '' },
-    { id: 7, url: '/media/Copy of ARG-84.JPG', alt: 'Gallery 7', caption: '' },
-    { id: 8, url: '/media/Copy of ARG-92.JPG', alt: 'Gallery 8', caption: '' },
-  ], [])
+  const manualGalleryPhotos = [
+    { id: 1, url: '/media/ARG-27.JPG', alt: 'Gallery 1', caption: '' },
+    { id: 2, url: '/media/ARG-37.JPG', alt: 'Gallery 2', caption: '' },
+    { id: 3, url: '/media/ARG-74.JPG', alt: 'Gallery 3', caption: '' },
+    { id: 4, url: '/media/ARG-79.JPG', alt: 'Gallery 4', caption: '' },
+    { id: 5, url: '/media/ARG-81.JPG', alt: 'Gallery 5', caption: '' },
+    { id: 6, url: '/media/ARG-82.JPG', alt: 'Gallery 6', caption: '' },
+    { id: 7, url: '/media/ARG-84.JPG', alt: 'Gallery 7', caption: '' },
+    { id: 8, url: '/media/ARG-92.JPG', alt: 'Gallery 8', caption: '' },
+  ]
 
-  useEffect(() => {
-    // Memberikan jeda sebelum nama mempelai memudar masuk (fade in)
-    const timer = setTimeout(() => setMountCover(true), 800)
-    return () => clearTimeout(timer)
-  }, [])
+  const galleryPhotos = useMemo(() => {
+    const cmsPhotos = byRole.gallery.flatMap((item) => {
+      const media = getMedia(item)
+      return media?.url ? [{ id: item.id, url: media.url, alt: media.alt || item.caption || 'Foto', caption: item.caption }] : []
+    })
+    return cmsPhotos.length > 0 ? cmsPhotos : manualGalleryPhotos
+  }, [byRole.gallery])
 
   useEffect(() => {
     if (lightboxIndex === null) return
@@ -144,6 +129,10 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
     window.addEventListener('keydown', onKey)
     return () => { document.body.style.overflow = ''; window.removeEventListener('keydown', onKey) }
   }, [lightboxIndex, galleryPhotos.length])
+
+  function showPhoto(step: number) {
+    setLightboxIndex((i) => (i === null ? i : (i + step + galleryPhotos.length) % galleryPhotos.length))
+  }
 
   const tracks: MusicTrack[] = useMemo(() => [{ title: 'JKT48 - Rapsodi', url: '/media/JKT48_Rapsodi.mp3' }], [])
   const player = useMusicPlayer(tracks, { onTrackStart: () => setShowTrack(true) })
@@ -186,10 +175,6 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
     window.setTimeout(() => setCopied(''), 1800)
   }
 
-  const cleanName = (fullName: string | undefined, fallback: string) => {
-    return (fullName || fallback).split(',')[0].trim();
-  }
-
   return (
     <main className="bg-charcoal text-ivory selection:bg-gold-soft selection:text-charcoal font-sans">
       
@@ -202,36 +187,25 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
             <source src="/media/cover.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 z-0 bg-gradient-to-b from-charcoal/60 via-charcoal/20 to-charcoal/95" />
-        
         <div className="relative z-10 flex min-h-svh flex-col items-center justify-between px-6 py-16 text-center text-ivory">
-          <div className="flex flex-col items-center gap-2 text-[0.65rem] font-bold tracking-[0.3em] uppercase opacity-90 mt-10 min-h-[40px]">
-            {/* TYPEWRITER: Halus, kecepatan 120ms per huruf */}
-            <TypewriterEffect text="The Wedding of" delay={120} startDelay={200} />
-            <span className={`h-[2px] w-12 bg-gold-soft/80 transition-all duration-1000 delay-1000 ${mountCover ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+          <div className="flex flex-col items-center gap-2 text-[0.65rem] font-bold tracking-[0.3em] uppercase opacity-90 mt-10">
+            <span>The Wedding of</span>
+            <span className="h-[2px] w-12 bg-gold-soft/80" />
           </div>
-          
-          <div className={`min-h-[160px] flex flex-col justify-center transition-all duration-[2000ms] ease-out ${mountCover ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            {/* NAMA MEMPELAI: Font tulisan tangan (handwriting) dengan animasi pudar perlahan */}
-            <h1 className={`${handwriting.className} text-7xl md:text-8xl leading-[1.1] font-normal tracking-wide drop-shadow-lg text-gold-soft`}>
-              {cleanName(settings.brideName, 'Dina Yuliarty')} <br />
-              <span className="font-serif text-4xl text-ivory my-1 block opacity-80">&amp;</span>
-              {cleanName(settings.groomName, 'Wirahilman')}
+          <div>
+            <h1 className="font-serif text-5xl md:text-6xl leading-[1.1] font-medium tracking-wide drop-shadow-md">
+              {settings.brideName || 'Dina'} <br />
+              <span className="font-serif text-3xl italic text-gold-soft my-1 block">&amp;</span>
+              {settings.groomName || 'Wira'}
             </h1>
-            <p className="mt-8 text-[0.7rem] tracking-[0.3em] uppercase opacity-80 font-medium">
-              {/* TYPEWRITER: Mulai setelah nama muncul */}
-              <TypewriterEffect text={coverDateText} delay={100} startDelay={1500} />
-            </p>
+            <p className="mt-8 text-[0.7rem] tracking-[0.3em] uppercase opacity-80 font-medium">{coverDateText}</p>
           </div>
-          
-          <div className="w-full max-w-sm mb-10 min-h-[120px]">
+          <div className="w-full max-w-sm mb-10">
             <p className="mb-6 text-xs leading-relaxed text-ivory/70 font-medium tracking-widest uppercase">
-              {/* TYPEWRITER: Muncul berurutan */}
-              <span className="block mb-2"><TypewriterEffect text="Yth. Bapak/Ibu/Saudara/i" delay={70} startDelay={2500} /></span>
-              <strong className="block font-serif text-xl font-normal text-ivory capitalize tracking-normal">
-                <TypewriterEffect text={`${guest?.name || 'Tamu Undangan'} ${guest?.partnerLabel || ''}`.trim()} delay={90} startDelay={4500} />
-              </strong>
+              Yth. Bapak/Ibu/Saudara/i
+              <strong className="mt-2 block font-serif text-xl font-normal text-ivory capitalize tracking-normal">{guest?.name || 'Tamu Undangan'} {guest?.partnerLabel}</strong>
             </p>
-            <button type="button" onClick={openInvitation} className={`group flex mx-auto h-12 w-48 items-center justify-center gap-3 rounded-full bg-transparent border border-ivory/50 text-[0.65rem] font-bold tracking-[0.2em] text-ivory uppercase transition-all duration-[1500ms] hover:bg-ivory hover:text-charcoal active:scale-95 backdrop-blur-sm ${mountCover ? 'opacity-100 translate-y-0 delay-[6000ms]' : 'opacity-0 translate-y-4'}`}>
+            <button type="button" onClick={openInvitation} className="group flex mx-auto h-12 w-48 items-center justify-center gap-3 rounded-full bg-transparent border border-ivory/50 text-[0.65rem] font-bold tracking-[0.2em] text-ivory uppercase transition-all duration-500 hover:bg-ivory hover:text-charcoal active:scale-95 backdrop-blur-sm">
               Buka Undangan
             </button>
           </div>
@@ -241,15 +215,16 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
       {/* ================= CONTENT INVITATION ================= */}
       <div id="invitation" className={`transition-opacity duration-1000 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
         
-        {/* 1. AYAT SUCI */}
+        {/* 1. AYAT SUCI (DARK OVERLAY) */}
         <section className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 text-center snap-start">
           <div className="absolute inset-0 z-0">
+            {/* Referensi 1fe738: Dark overlay, no blur */}
             <Image src="/media/MLJ01773.jpeg" alt="Verse" fill sizes="100vw" quality={75} className="object-cover" />
             <div className="absolute inset-0 bg-black/60" />
           </div>
           <div className="relative z-10 p-6 max-w-md">
             <blockquote className="font-serif text-lg md:text-xl leading-relaxed italic text-ivory/90 font-light">
-              " {settings.verse || 'Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri...'} "
+              <TypewriterEffect text={`" ${settings.verse || 'Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri...'} "`} delay={40} />
             </blockquote>
             <p className="mt-8 text-[0.65rem] font-bold tracking-[0.25em] text-gold-soft uppercase">
               QS. Ar-Rum : 21
@@ -257,7 +232,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 2. THE BRIDE */}
+        {/* 2. THE BRIDE (FULLSCREEN NO BOX) */}
         <section className="relative flex min-h-svh flex-col justify-end overflow-hidden text-center snap-start">
           <div className="absolute inset-0 z-0">
             <Image src="/media/MLJ02061.jpeg" alt="Bride" fill sizes="100vw" quality={85} className="object-cover" />
@@ -266,7 +241,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           <div className="relative z-10 w-full px-6 pb-20">
             <p className="text-[0.65rem] font-bold tracking-[0.3em] text-ivory/70 uppercase mb-2">The Bride</p>
             <h3 className="font-serif text-4xl md:text-5xl font-medium drop-shadow-md text-ivory">
-              {cleanName(settings.people?.brideFullName, 'Dina Yuliarty')}
+              {settings.people?.brideFullName || 'Dina Yuliana'}
             </h3>
             <p className="mx-auto mt-4 max-w-xs text-[0.7rem] font-medium leading-relaxed text-ivory/60 tracking-widest uppercase">
               Putri Dari <br/> <span className="text-ivory/90">{settings.people?.brideParents}</span>
@@ -274,7 +249,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 3. THE GROOM */}
+        {/* 3. THE GROOM (FULLSCREEN NO BOX) */}
         <section className="relative flex min-h-svh flex-col justify-end overflow-hidden text-center snap-start">
           <div className="absolute inset-0 z-0">
              <Image src="/media/MLJ02105.jpeg" alt="Groom" fill sizes="100vw" quality={85} className="object-cover" />
@@ -283,7 +258,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           <div className="relative z-10 w-full px-6 pb-20">
             <p className="text-[0.65rem] font-bold tracking-[0.3em] text-ivory/70 uppercase mb-2">The Groom</p>
             <h3 className="font-serif text-4xl md:text-5xl font-medium drop-shadow-md text-ivory">
-              {cleanName(settings.people?.groomFullName, 'Wirahilman')}
+              {settings.people?.groomFullName || 'Wirahilman'}
             </h3>
             <p className="mx-auto mt-4 max-w-xs text-[0.7rem] font-medium leading-relaxed text-ivory/60 tracking-widest uppercase">
               Putra Dari <br/> <span className="text-ivory/90">{settings.people?.groomParents}</span>
@@ -322,7 +297,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 5. SAVE THE DATE */}
+        {/* 5. SAVE THE DATE & DRESSCODE TYPEWRITER */}
         <section className="relative overflow-hidden bg-charcoal px-6 py-28 text-ivory snap-start flex flex-col items-center justify-center min-h-svh">
           <div className="absolute inset-0 z-0">
              <Image src="/media/MLJ01952.jpeg" alt="Save the Date" fill sizes="100vw" quality={60} className="object-cover" />
@@ -347,7 +322,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
               ))}
             </div>
 
-            <div>
+            <div className="mb-16">
                <p className="text-[0.7rem] font-bold tracking-[0.3em] text-gold-soft uppercase mb-4">Location</p>
                <h3 className="font-serif text-2xl font-medium">{settings.venue?.name || 'Ballroom Puri Mega Hotel'}</h3>
                <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-ivory/60 font-light">{settings.venue?.address || 'Jakarta Pusat'}</p>
@@ -355,10 +330,22 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
                   Google Maps
                </a>
             </div>
+
+            {/* Referensi 1fe6da & 1fe6bf: Dresscode/Typewriting effect */}
+            <div className="pt-10 border-t border-ivory/10">
+               <p className="text-[0.7rem] font-bold tracking-[0.3em] text-gold-soft uppercase mb-4">Dresscode</p>
+               <p className="font-serif text-lg text-ivory/90 italic h-8">
+                 <TypewriterEffect text="Silakan kenakan pakaian bernuansa Hitam atau Putih." delay={60} />
+               </p>
+               <div className="flex justify-center gap-4 mt-6">
+                 <div className="w-8 h-8 rounded-full bg-black border border-white/20 shadow-lg"></div>
+                 <div className="w-8 h-8 rounded-full bg-white border border-white/20 shadow-lg"></div>
+               </div>
+            </div>
           </div>
         </section>
 
-        {/* 6. OUR GALLERY */}
+        {/* 6. OUR GALLERY (MASONRY GRID, DARK BG) */}
         {galleryPhotos.length > 0 && (
           <section className="bg-[#1a1a1a] py-28 px-4 md:px-10 snap-start">
             <SectionTitle kicker="Our Moment">Terekam dalam waktu</SectionTitle>
