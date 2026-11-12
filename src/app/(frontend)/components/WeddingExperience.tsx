@@ -120,13 +120,20 @@ function Icon({ name, className = 'size-5' }: { name: 'arrow' | 'calendar' | 'ch
 }
 
 // --- FONT JUDUL  ---
-// Menggunakan Serif klasik (tidak lagi handwriting) untuk semua Kicker agar tegas
-function SectionTitle({ kicker, children, light = true }: { kicker: string; children: React.ReactNode; light?: boolean }) {
+// isHandwriting default = true (seperti yang Abang minta untuk semua halaman)
+// khusus RSVP nanti dipanggil dengan isHandwriting = false
+function SectionTitle({ kicker, children, light = true, isHandwriting = true }: { kicker: string; children: React.ReactNode; light?: boolean; isHandwriting?: boolean }) {
   return (
     <div className="mb-12 text-center relative z-10">
-      <p className={`mb-3 text-[0.65rem] font-bold tracking-[0.3em] uppercase ${light ? 'text-ivory/70' : 'text-sage'}`}>
-        {kicker}
-      </p>
+      {isHandwriting ? (
+        <p className={`mb-1 text-5xl font-normal drop-shadow-sm ${light ? 'text-gold-soft' : 'text-sage'}`} style={{ fontFamily: "'Alex Brush', cursive" }}>
+          {kicker}
+        </p>
+      ) : (
+        <p className={`mb-3 text-[0.65rem] font-bold tracking-[0.3em] uppercase ${light ? 'text-ivory/70' : 'text-sage'}`}>
+          {kicker}
+        </p>
+      )}
       <h2 className={`font-serif text-3xl md:text-4xl leading-tight font-medium tracking-wide ${light ? 'text-ivory' : 'text-charcoal'}`}>
         {children}
       </h2>
@@ -147,8 +154,9 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
   }), [gallery])
 
   // FOTO PRE-WEDDING (Ditampilkan lebih dulu)
+  // Fix 02000 ekstensinya .JPEG besar karena Vercel Case-Sensitive
   const preWeddingPhotos = ['01728','01763','01773','01789','01797','01799','01811','01846','01860','01888','01941','01952','01954','02000','02019','02031','02061','02074','02078','02105'].map(n => ({
-    id: `p-${n}`, url: `/media/MLJ${n}.jpeg`, alt: `Pre-Wedding ${n}`
+    id: `p-${n}`, url: `/media/MLJ${n}.${n === '02000' ? 'JPEG' : 'jpeg'}`, alt: `Pre-Wedding ${n}`
   }))
 
   // FOTO ENGAGEMENT
@@ -437,7 +445,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 6. OUR GALLERY (DIUBAH JADI SCROLLABLE HORIZONTAL) */}
+        {/* 6. OUR GALLERY (SCROLLABLE HORIZONTAL) */}
         <section className="bg-[#1a1a1a] py-28 px-0 snap-start overflow-hidden">
            <PopUpEffect isReady={isOpen}>
               <SectionTitle kicker="Our Moment">Terekam dalam waktu</SectionTitle>
@@ -479,14 +487,13 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
             </div>
            </PopUpEffect>
            
-           {/* Styles untuk sembunyikan scrollbar */}
            <style dangerouslySetInnerHTML={{__html: `
               .hide-scrollbar::-webkit-scrollbar { display: none; }
               .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
            `}} />
         </section>
 
-        {/* 7. RSVP */}
+        {/* 7. RSVP (POIN 1: FONT RSVP BUKAN HANDWRITING) */}
         <section className="relative overflow-hidden px-6 py-28 snap-start">
           <div className="absolute inset-0 z-0">
             <Image src="/media/MLJ01728.jpeg" alt="RSVP" fill sizes="100vw" quality={60} className="object-cover" />
@@ -494,7 +501,8 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
           <div className="relative z-10">
              <PopUpEffect isReady={isOpen}>
-                <SectionTitle kicker="RSVP">Kehadiran Anda</SectionTitle>
+                {/* RSVP menggunakan sans-serif tebal (isHandwriting=false) */}
+                <SectionTitle kicker="RSVP" isHandwriting={false}>Kehadiran Anda</SectionTitle>
              </PopUpEffect>
             
             <PopUpEffect delay={150} isReady={isOpen}>
@@ -586,19 +594,20 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 9. FOOTER (POIN 3: Logo Diperbesar, Kalimat & Hashtag Diubah) */}
+        {/* 9. FOOTER */}
         <footer className="bg-[#111] px-6 py-32 text-center text-ivory snap-start">
            <PopUpEffect isReady={isOpen}>
-              {/* Lingkaran Logo D&W Diperbesar */}
-              <div className="mx-auto mb-10 flex size-24 items-center justify-center rounded-full border border-ivory/20">
-                <span className="font-serif text-3xl text-ivory/90">D</span>
-                <span className="mx-1.5 text-lg italic text-gold-soft" style={{ fontFamily: "'Alex Brush', cursive" }}>&amp;</span>
-                <span className="font-serif text-3xl text-ivory/90">W</span>
+              {/* POIN 3: Logo D&W Vertikal (ditumpuk) */}
+              <div className="mx-auto mb-10 flex flex-col size-28 items-center justify-center rounded-full border border-ivory/20 leading-none shadow-md">
+                <span className="font-serif text-4xl text-ivory/90">D</span>
+                <span className="text-xl italic text-gold-soft my-1" style={{ fontFamily: "'Alex Brush', cursive" }}>&amp;</span>
+                <span className="font-serif text-4xl text-ivory/90">W</span>
               </div>
               <p className="font-serif text-3xl md:text-4xl leading-snug font-medium tracking-wide">
                 Dari Kami yang<br />Berbahagia
               </p>
-              <p className="mt-8 text-[0.7rem] text-gold-soft font-bold tracking-[0.3em] uppercase">#DIRAngkaicerita</p>
+              {/* POIN 3: Hashtag tidak kapital semua */}
+              <p className="mt-8 text-[0.75rem] text-gold-soft font-bold tracking-[0.2em]">#DIRAngkaicerita</p>
               <div className="mx-auto my-12 h-px w-16 bg-ivory/20" />
               <p className="text-[0.55rem] font-bold tracking-[0.2em] text-ivory/30 uppercase">
                 © 2026 Dina Yuliarty & Wirahilman
