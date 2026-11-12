@@ -1,13 +1,22 @@
 import { notFound } from 'next/navigation'
-import WeddingExperience from '../components/WeddingExperience' // <--- Perhatikan titiknya ada dua (../)
+import WeddingExperience from '../components/WeddingExperience'
 import { loadWeddingData } from '@/lib/wedding-data'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 
 export const revalidate = 60
 
-export default async function GuestPage({ params }: { params: { slug: string } }) {
-  const { slug } = params
+// Tambahkan Promise pada tipe data params
+type Args = {
+  params: Promise<{
+    slug: string
+  }>
+}
+
+export default async function GuestPage({ params }: Args) {
+  // PERBAIKAN: params harus di-await
+  const resolvedParams = await params
+  const { slug } = resolvedParams
 
   const { settings, gallery, messages } = await loadWeddingData()
   
