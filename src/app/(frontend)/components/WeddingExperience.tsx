@@ -99,7 +99,7 @@ type Media = { id: string | number; url?: string | null; alt?: string; width?: n
 type GalleryItem = { id: string | number; role: 'cover' | 'bride' | 'groom' | 'story' | 'gallery'; caption: string; order: number; image: string | number | Media }
 type Settings = { brideName?: string; groomName?: string; hashtag?: string; weddingDate?: string; musicEnabled?: boolean | null; verse?: string; venue?: { name?: string; address?: string; mapsUrl?: string }; people?: { brideFullName?: string; brideParents?: string; groomFullName?: string; groomParents?: string }; loveStory?: { id?: string | null; year: string; title: string; description: string }[] | null; bankAccounts?: { id?: string | null; bank: string; accountNumber: string; accountName: string }[] | null }
 type Message = { id: string | number; guestName: string; message?: string | null }
-type Guest = { id: string; name: string; partnerLabel: string; maxGuests: number; invitationType: 'personal' | 'group' }
+type Guest = { id: string | number; name: string; partnerLabel?: string | null; maxGuests?: number | null; invitationType?: 'personal' | 'group' | string | null }
 const initialRSVPState: RSVPState = { success: false, message: '' }
 
 function Icon({ name, className = 'size-5' }: { name: 'arrow' | 'calendar' | 'check' | 'chevron' | 'copy' | 'gift' | 'location' | 'music' | 'pause' | 'play' | 'x'; className?: string }) {
