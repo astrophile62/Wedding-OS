@@ -119,11 +119,12 @@ function Icon({ name, className = 'size-5' }: { name: 'arrow' | 'calendar' | 'ch
   return <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>
 }
 
-// --- FONT JUDUL (Handwriting Kicker + Serif Title) ---
+// --- FONT JUDUL  ---
+// Menggunakan Serif klasik (tidak lagi handwriting) untuk semua Kicker agar tegas
 function SectionTitle({ kicker, children, light = true }: { kicker: string; children: React.ReactNode; light?: boolean }) {
   return (
     <div className="mb-12 text-center relative z-10">
-      <p className={`mb-1 text-5xl font-normal drop-shadow-sm ${light ? 'text-gold-soft' : 'text-sage'}`} style={{ fontFamily: "'Alex Brush', cursive" }}>
+      <p className={`mb-3 text-[0.65rem] font-bold tracking-[0.3em] uppercase ${light ? 'text-ivory/70' : 'text-sage'}`}>
         {kicker}
       </p>
       <h2 className={`font-serif text-3xl md:text-4xl leading-tight font-medium tracking-wide ${light ? 'text-ivory' : 'text-charcoal'}`}>
@@ -141,17 +142,21 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
   const [copied, setCopied] = useState('')
   const [state, formAction, pending] = useActionState(submitRSVP, initialRSVPState)
 
-  // FOTO ENGAGEMENT
-  const engagementPhotos = [27,37,74,79,81,82,84,92,99,102,110,111,120,372,375,377,386,387,393,397,411,413,419,428,430,438,443,449,451,457].map(n => ({
-    id: `e-${n}`, url: `/media/Copy of ARG-${n}.JPG`, alt: `Engagement ${n}`
-  }))
-  
-  // FOTO PRE-WEDDING
+  const byRole = useMemo(() => ({
+    story: gallery.filter((item) => item.role === 'story'),
+  }), [gallery])
+
+  // FOTO PRE-WEDDING (Ditampilkan lebih dulu)
   const preWeddingPhotos = ['01728','01763','01773','01789','01797','01799','01811','01846','01860','01888','01941','01952','01954','02000','02019','02031','02061','02074','02078','02105'].map(n => ({
     id: `p-${n}`, url: `/media/MLJ${n}.jpeg`, alt: `Pre-Wedding ${n}`
   }))
 
-  const allGalleryPhotos = [...engagementPhotos, ...preWeddingPhotos]
+  // FOTO ENGAGEMENT
+  const engagementPhotos = [27,37,74,79,81,82,84,92,99,102,110,111,120,372,375,377,386,387,393,397,411,413,419,428,430,438,443,449,451,457].map(n => ({
+    id: `e-${n}`, url: `/media/Copy of ARG-${n}.JPG`, alt: `Engagement ${n}`
+  }))
+
+  const allGalleryPhotos = [...preWeddingPhotos, ...engagementPhotos]
 
   useEffect(() => {
     if (lightboxIndex === null) return
@@ -231,7 +236,6 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
     return (fullName || fallback).split(',')[0].trim();
   }
 
-  // Fallback Foto Story (Poin 2)
   const storyFallbackImages = ['/media/MLJ01763.jpeg', '/media/MLJ01789.jpeg', '/media/MLJ01797.jpeg', '/media/MLJ01811.jpeg']
 
   return (
@@ -277,7 +281,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
       {/* ================= CONTENT INVITATION ================= */}
       <div id="invitation" className={`transition-opacity duration-1000 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
         
-        {/* 1. AYAT SUCI (POIN 1: whitespace-pre-line) */}
+        {/* 1. AYAT SUCI */}
         <section className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 text-center snap-start">
           <div className="absolute inset-0 z-0">
             <Image src="/media/MLJ01773.jpeg" alt="Verse" fill sizes="100vw" quality={75} className="object-cover" />
@@ -335,7 +339,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 4. OUR LOVE STORY (POIN 2: FOTO OTOMATIS) */}
+        {/* 4. OUR LOVE STORY */}
         <section className="relative overflow-hidden px-6 py-28 snap-start">
           <div className="absolute inset-0 z-0">
              <Image src="/media/MLJ01954.jpeg" alt="Love Story" fill sizes="100vw" quality={60} className="object-cover" />
@@ -348,7 +352,6 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
             <div className="relative mx-auto max-w-xl">
               <div className="absolute top-3 bottom-3 left-[2.75rem] w-px bg-gold-soft/30 md:left-1/2" />
               {settings.loveStory?.map((story, index) => {
-                // Gunakan fallback image jika di CMS belum ada foto
                 const imageUrl = storyFallbackImages[index % storyFallbackImages.length]
                 return (
                   <PopUpEffect key={story.id || story.year} delay={index * 100} isReady={isOpen}>
@@ -434,48 +437,56 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 6. OUR GALLERY (POIN 7: ENGAGEMENT & PRE-WEDDING) */}
-        <section className="bg-[#1a1a1a] py-28 px-4 md:px-10 snap-start">
+        {/* 6. OUR GALLERY (DIUBAH JADI SCROLLABLE HORIZONTAL) */}
+        <section className="bg-[#1a1a1a] py-28 px-0 snap-start overflow-hidden">
            <PopUpEffect isReady={isOpen}>
               <SectionTitle kicker="Our Moment">Terekam dalam waktu</SectionTitle>
            </PopUpEffect>
 
-           {/* SECTION 1: ENGAGEMENT */}
+           {/* SECTION 1: PRE-WEDDING */}
            <PopUpEffect delay={100} isReady={isOpen}>
-              <h3 className="text-center font-serif text-2xl text-ivory mb-8 mt-12 tracking-wide">Engagement</h3>
+              <h3 className="text-center font-serif text-2xl text-ivory mb-6 tracking-wide">Pre-Wedding</h3>
            </PopUpEffect>
-          <div className="columns-2 md:columns-3 gap-4 space-y-4 max-w-5xl mx-auto mb-20">
-            {engagementPhotos.map((photo) => {
-              const index = allGalleryPhotos.findIndex(p => p.id === photo.id)
-              return (
-              <PopUpEffect key={photo.id} delay={150} isReady={isOpen}>
-                 <div className="relative break-inside-avoid cursor-pointer overflow-hidden rounded-xl group" onClick={() => setLightboxIndex(index)}>
-                   <Image src={photo.url} alt={photo.alt} width={500} height={700} sizes="(max-width: 768px) 50vw, 33vw" quality={70} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105" />
-                   <div className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/20" />
-                 </div>
-              </PopUpEffect>
-            )})}
-          </div>
+           <PopUpEffect delay={150} isReady={isOpen}>
+            <div className="flex overflow-x-auto gap-4 px-6 pb-12 snap-x snap-mandatory hide-scrollbar">
+              {preWeddingPhotos.map((photo) => {
+                const index = allGalleryPhotos.findIndex(p => p.id === photo.id)
+                return (
+                  <div key={photo.id} className="relative flex-none w-[70vw] md:w-[30vw] aspect-[3/4] cursor-pointer overflow-hidden rounded-xl group snap-center shadow-lg" onClick={() => setLightboxIndex(index)}>
+                    <Image src={photo.url} alt={photo.alt} fill sizes="(max-width: 768px) 70vw, 30vw" quality={70} className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/20" />
+                  </div>
+                )
+              })}
+            </div>
+           </PopUpEffect>
 
-          {/* SECTION 2: PRE-WEDDING */}
-          <PopUpEffect delay={100} isReady={isOpen}>
-              <h3 className="text-center font-serif text-2xl text-ivory mb-8 tracking-wide">Pre-Wedding</h3>
+           {/* SECTION 2: ENGAGEMENT */}
+           <PopUpEffect delay={100} isReady={isOpen}>
+              <h3 className="text-center font-serif text-2xl text-ivory mb-6 mt-8 tracking-wide">Engagement</h3>
            </PopUpEffect>
-          <div className="columns-2 md:columns-3 gap-4 space-y-4 max-w-5xl mx-auto">
-            {preWeddingPhotos.map((photo) => {
-              const index = allGalleryPhotos.findIndex(p => p.id === photo.id)
-              return (
-              <PopUpEffect key={photo.id} delay={150} isReady={isOpen}>
-                 <div className="relative break-inside-avoid cursor-pointer overflow-hidden rounded-xl group" onClick={() => setLightboxIndex(index)}>
-                   <Image src={photo.url} alt={photo.alt} width={500} height={700} sizes="(max-width: 768px) 50vw, 33vw" quality={70} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105" />
-                   <div className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/20" />
-                 </div>
-              </PopUpEffect>
-            )})}
-          </div>
+           <PopUpEffect delay={150} isReady={isOpen}>
+            <div className="flex overflow-x-auto gap-4 px-6 pb-6 snap-x snap-mandatory hide-scrollbar">
+              {engagementPhotos.map((photo) => {
+                const index = allGalleryPhotos.findIndex(p => p.id === photo.id)
+                return (
+                  <div key={photo.id} className="relative flex-none w-[70vw] md:w-[30vw] aspect-[3/4] cursor-pointer overflow-hidden rounded-xl group snap-center shadow-lg" onClick={() => setLightboxIndex(index)}>
+                    <Image src={photo.url} alt={photo.alt} fill sizes="(max-width: 768px) 70vw, 30vw" quality={70} className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/20" />
+                  </div>
+                )
+              })}
+            </div>
+           </PopUpEffect>
+           
+           {/* Styles untuk sembunyikan scrollbar */}
+           <style dangerouslySetInnerHTML={{__html: `
+              .hide-scrollbar::-webkit-scrollbar { display: none; }
+              .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+           `}} />
         </section>
 
-        {/* 7. RSVP (POIN 4: TIDAK HADIR) */}
+        {/* 7. RSVP */}
         <section className="relative overflow-hidden px-6 py-28 snap-start">
           <div className="absolute inset-0 z-0">
             <Image src="/media/MLJ01728.jpeg" alt="RSVP" fill sizes="100vw" quality={60} className="object-cover" />
@@ -538,7 +549,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 8. WEDDING GIFT (POIN 5: FONT SANS-SERIF) */}
+        {/* 8. WEDDING GIFT */}
         <section className="relative overflow-hidden px-6 py-28 snap-start">
           <div className="absolute inset-0 z-0">
              <Image src="/media/MLJ02074.jpeg" alt="Wedding Gift" fill sizes="100vw" quality={60} className="object-cover" />
@@ -575,17 +586,20 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           </div>
         </section>
 
-        {/* 9. FOOTER */}
-        <footer className="bg-[#111] px-6 py-24 text-center text-ivory snap-start">
+        {/* 9. FOOTER (POIN 3: Logo Diperbesar, Kalimat & Hashtag Diubah) */}
+        <footer className="bg-[#111] px-6 py-32 text-center text-ivory snap-start">
            <PopUpEffect isReady={isOpen}>
-              <div className="mx-auto mb-8 grid size-16 place-items-center rounded-full border border-ivory/20 font-serif text-xl text-ivory/80">
-                D<span className="mx-1 text-sm italic text-gold-soft">&amp;</span>W
+              {/* Lingkaran Logo D&W Diperbesar */}
+              <div className="mx-auto mb-10 flex size-24 items-center justify-center rounded-full border border-ivory/20">
+                <span className="font-serif text-3xl text-ivory/90">D</span>
+                <span className="mx-1.5 text-lg italic text-gold-soft" style={{ fontFamily: "'Alex Brush', cursive" }}>&amp;</span>
+                <span className="font-serif text-3xl text-ivory/90">W</span>
               </div>
-              <p className="font-serif text-3xl leading-snug font-medium">
-                Merangkai <br /> Cerita
+              <p className="font-serif text-3xl md:text-4xl leading-snug font-medium tracking-wide">
+                Dari Kami yang<br />Berbahagia
               </p>
-              <p className="mt-6 text-[0.65rem] text-gold-soft font-bold tracking-[0.2em] uppercase">{settings.hashtag}</p>
-              <div className="mx-auto my-12 h-px w-12 bg-ivory/20" />
+              <p className="mt-8 text-[0.7rem] text-gold-soft font-bold tracking-[0.3em] uppercase">#DIRAngkaicerita</p>
+              <div className="mx-auto my-12 h-px w-16 bg-ivory/20" />
               <p className="text-[0.55rem] font-bold tracking-[0.2em] text-ivory/30 uppercase">
                 © 2026 Dina Yuliarty & Wirahilman
               </p>
@@ -593,7 +607,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
         </footer>
       </div>
 
-      {/* ================= LIGHTBOX GALLERY (POIN 3: Z-Index, Swipe, Animation) ================= */}
+      {/* ================= LIGHTBOX GALLERY ================= */}
       {lightboxIndex !== null && allGalleryPhotos[lightboxIndex] && (
         <div 
           className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-black/95 backdrop-blur-lg animate-in fade-in duration-300"
@@ -606,7 +620,6 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           }}
           onClick={() => setLightboxIndex(null)}
         >
-          {/* Tombol X dengan z-[90] agar tidak tertutup gambar */}
           <button type="button" autoFocus onClick={() => setLightboxIndex(null)} className="absolute top-6 right-6 z-[90] grid size-12 place-items-center rounded-full bg-white/10 text-ivory hover:bg-white/20 transition-colors shadow-lg">
             <Icon name="x" className="size-5" />
           </button>
@@ -615,7 +628,6 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
             <Image src={allGalleryPhotos[lightboxIndex].url} alt={allGalleryPhotos[lightboxIndex].alt} fill sizes="100vw" quality={90} className="object-contain" priority />
           </div>
           
-          {/* Indikator Swiper di Bawah */}
           <div className="absolute bottom-6 text-ivory/50 text-xs font-bold tracking-widest z-[90]">
             {lightboxIndex + 1} / {allGalleryPhotos.length}
           </div>
