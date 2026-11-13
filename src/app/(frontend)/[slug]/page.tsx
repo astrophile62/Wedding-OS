@@ -6,7 +6,6 @@ import configPromise from '@payload-config'
 
 export const revalidate = 60
 
-// Tambahkan Promise pada tipe data params
 type Args = {
   params: Promise<{
     slug: string
@@ -14,7 +13,7 @@ type Args = {
 }
 
 export default async function GuestPage({ params }: Args) {
-  // PERBAIKAN: params harus di-await
+  // 1. Tangkap slug dengan aman
   const resolvedParams = await params
   const { slug } = resolvedParams
 
@@ -31,18 +30,29 @@ export default async function GuestPage({ params }: Args) {
     limit: 1,
   })
 
-  const guest = docs[0] || null
+  const rawGuest = docs[0]
 
-  if (!guest) {
+  if (!rawGuest) {
     notFound()
   }
 
+  // 2. CUCI DATA: Ekstrak hanya teks dan angka murni
+  // Ini kunci untuk menghilangkan React Error 441
+  const cleanGuest = {
+    id: String(rawGuest.id),
+    name: String(rawGuest.name),
+    partnerLabel: rawGuest.partnerLabel ? String(rawGuest.partnerLabel) : '',
+    maxGuests: Number(rawGuest.maxGuests) || 1,
+    invitationType: rawGuest.invitationType === 'group' ? 'group' : 'personal'
+  }
+
+  // 3. Kirim data yang sudah bersih ke komponen
   return (
     <WeddingExperience 
       settings={settings} 
       gallery={gallery} 
       messages={messages} 
-      guest={guest} 
+      guest={cleanGuest} 
     />
   )
 }
