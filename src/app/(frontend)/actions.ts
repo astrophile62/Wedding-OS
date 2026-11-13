@@ -14,19 +14,19 @@ export async function submitRSVP(
   _previousState: RSVPState,
   formData: FormData,
 ): Promise<RSVPState> {
-  // Kolom "guestId" di form berisi slug undangan
-  const slug = String(formData.get('guestId') || '').trim()
+  // guestId berisi ID database dari komponen WeddingExperience
+  const guestId = String(formData.get('guestId') || '').trim()
   const typedName = String(formData.get('guestName') || '').trim().replace(/\s+/g, ' ')
   const attendance = String(formData.get('attendance') || '')
   const requestedCount = Number(formData.get('guestCount'))
   const wish = String(formData.get('message') || '').trim()
 
-  // Kolom jebakan untuk bot: manusia tidak melihatnya (perlu input tersembunyi bernama "website")
-    if (String(formData.get('hp_catatan') || '').trim()) {
+  // Kolom jebakan untuk bot: manusia tidak melihatnya
+  if (String(formData.get('hp_catatan') || '').trim()) {
     return { success: true, message: 'Terima kasih.' }
   }
 
-  if (!slug || !['attending', 'declined'].includes(attendance)) {
+  if (!guestId || !['attending', 'declined'].includes(attendance)) {
     return { success: false, message: 'Mohon lengkapi konfirmasi kehadiran.' }
   }
   if (wish.length > 500) {
@@ -35,39 +35,44 @@ export async function submitRSVP(
 
   try {
     const payload = await getPayload({ config })
-        const fingerprint = await clientFingerprint()
+    const fingerprint = await clientFingerprint()
     const ipAllowed = await checkRateLimit(payload, fingerprint, {
       action: 'rsvp-ip',
       limit: 30,
       windowSeconds: 600,
     })
+    
     if (!ipAllowed) {
       return { success: false, message: 'Terlalu banyak percobaan. Silakan coba lagi beberapa menit lagi.' }
     }
 
+    // PERBAIKAN: Cari berdasarkan ID (karena formData.get('guestId') mengirimkan ID)
     const found = await payload.find({
       collection: 'guests',
-      where: { slug: { equals: slug } },
+      where: { id: { equals: guestId } }, // Diubah dari slug ke id
       limit: 1,
       depth: 0,
       overrideAccess: true,
     })
+    
     const guest = found.docs[0]
+    
     if (!guest) {
       return { success: false, message: 'Undangan tidak ditemukan. Mohon buka tautan undangan Anda.' }
     }
-    const slugAllowed = await checkRateLimit(payload, slug, {
+    
+    const slugAllowed = await checkRateLimit(payload, String(guest.slug || guest.id), {
       action: 'rsvp-slug',
       limit: guest.invitationType === 'group' ? 150 : 15,
       windowSeconds: 600,
     })
+    
     if (!slugAllowed) {
       return { success: false, message: 'Terlalu banyak percobaan. Silakan coba lagi beberapa menit lagi.' }
     }
 
     const isGroup = guest.invitationType === 'group'
 
-    // Perorangan memakai nama dari data tamu. Grup memakai nama yang diketik pengunjung.
     let respondentName = guest.name
     if (isGroup) {
       if (typedName.length < 2 || typedName.length > 80) {
@@ -79,12 +84,11 @@ export async function submitRSVP(
     const guestCount = attendance === 'declined' ? 0 : requestedCount
     if (
       attendance === 'attending' &&
-      (!Number.isInteger(guestCount) || guestCount < 1 || guestCount > guest.maxGuests)
+      (!Number.isInteger(guestCount) || guestCount < 1 || guestCount > (guest.maxGuests || 1))
     ) {
-      return { success: false, message: `Jumlah tamu harus antara 1 dan ${guest.maxGuests}.` }
+      return { success: false, message: `Jumlah tamu harus antara 1 dan ${guest.maxGuests || 1}.` }
     }
 
-    // Pencarian data lama: perorangan per tamu, grup per tamu + nama yang sama
     const sameRespondent: Where = isGroup
       ? { and: [{ guest: { equals: guest.id } }, { guestName: { equals: respondentName } }] }
       : { guest: { equals: guest.id } }
@@ -133,7 +137,7 @@ export async function submitRSVP(
         guest: guest.id,
         guestName: respondentName,
         message: wish,
-        status: 'pending' as const, // setiap ucapan baru atau diubah ditinjau ulang
+        status: 'pending' as const, 
       }
       const existingWish = await payload.find({
         collection: 'guest-messages',
