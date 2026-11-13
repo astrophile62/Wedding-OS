@@ -6,20 +6,17 @@ import configPromise from '@payload-config'
 
 export const revalidate = 60
 
-type Args = {
-  params: Promise<{
-    slug: string
-  }>
-}
+export default async function GuestPage(props: any) {
+  // 1. Tangkap slug dengan aman (Kompatibel Next.js 14 & 15)
+  const params = await props.params;
+  const slug = params?.slug;
 
-export default async function GuestPage({ params }: Args) {
-  // 1. Tangkap slug dengan aman
-  const resolvedParams = await params
-  const { slug } = resolvedParams
+  if (!slug) notFound();
 
-  const { settings, gallery, messages } = await loadWeddingData()
+  // 2. Ambil semua data
+  const { settings, gallery, messages } = await loadWeddingData();
   
-  const payload = await getPayload({ config: configPromise })
+  const payload = await getPayload({ config: configPromise });
   const { docs } = await payload.find({
     collection: 'guests',
     where: {
@@ -28,31 +25,36 @@ export default async function GuestPage({ params }: Args) {
       },
     },
     limit: 1,
-  })
+  });
 
-  const rawGuest = docs[0]
+  const rawGuest = docs?.[0];
 
   if (!rawGuest) {
-    notFound()
+    notFound();
   }
 
-  // 2. CUCI DATA: Ekstrak hanya teks dan angka murni
-  // Ini kunci untuk menghilangkan React Error 441
+  // 3. Format data Guest murni
   const cleanGuest = {
-    id: String(rawGuest.id),
-    name: String(rawGuest.name),
+    id: String(rawGuest.id || ''),
+    name: String(rawGuest.name || ''),
     partnerLabel: rawGuest.partnerLabel ? String(rawGuest.partnerLabel) : '',
     maxGuests: Number(rawGuest.maxGuests) || 1,
     invitationType: rawGuest.invitationType === 'group' ? 'group' : 'personal'
-  }
+  };
 
-  // 3. Kirim data yang sudah bersih ke komponen
+  // 4. SUPER CLEANUP: Hancurkan semua Proxy/Promise tersembunyi dari database
+  // Ini adalah kunci utama untuk menghilangkan Error 441 di halaman dinamis!
+  const safeSettings = JSON.parse(JSON.stringify(settings));
+  const safeGallery = JSON.parse(JSON.stringify(gallery));
+  const safeMessages = JSON.parse(JSON.stringify(messages));
+  const safeGuest = JSON.parse(JSON.stringify(cleanGuest));
+
   return (
     <WeddingExperience 
-      settings={settings} 
-      gallery={gallery} 
-      messages={messages} 
-      guest={cleanGuest} 
+      settings={safeSettings} 
+      gallery={safeGallery} 
+      messages={safeMessages} 
+      guest={safeGuest} 
     />
-  )
+  );
 }
