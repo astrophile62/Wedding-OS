@@ -1,47 +1,77 @@
-import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import config from '@payload-config'
-import { getPayload } from 'payload'
-import WeddingExperience from '../../components/WeddingExperience'
+import WeddingExperience from '@/app/(frontend)/components/WeddingExperience'
 import { loadWeddingData } from '@/lib/wedding-data'
+import { getPayload } from 'payload'
+import configPromise from '@payload-config'
 
 export const revalidate = 60
 
-export const metadata: Metadata = { robots: { index: false, follow: false } }
+export default async function GuestPage(props: { params: Promise<{ slug: string }> | { slug: string } }) {
+  // 1. Tangkap slug
+  const resolvedParams = await Promise.resolve(props.params);
+  const slug = resolvedParams?.slug;
 
-export default async function InvitePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const payload = await getPayload({ config })
-  const found = await payload.find({
+  if (!slug) return notFound();
+
+  // 2. Ambil Data Global (Pesan yang sudah approved ada di dalam sini)
+  const { settings, gallery, messages } = await loadWeddingData();
+  
+  const payload = await getPayload({ config: configPromise });
+  const { docs } = await payload.find({
     collection: 'guests',
     where: { slug: { equals: slug } },
     limit: 1,
-    depth: 0,
     overrideAccess: true,
-  })
-  const guest = found.docs[0]
-  if (!guest) notFound()
+  });
 
-  const { settings, gallery, messages } = await loadWeddingData()
-  const isGroup = guest.invitationType === 'group'
+  const rawGuest = docs?.[0];
+  if (!rawGuest) return notFound();
+
+  // 3. FITUR ILUSI VIP: Ambil pesan milik tamu ini yang masih 'pending'
+  const pendingMessages = await payload.find({
+    collection: 'guest-messages',
+    where: {
+      and: [
+        { guest: { equals: rawGuest.id } },
+        { status: { equals: 'pending' } }
+      ]
+    },
+    overrideAccess: true,
+  });
+
+  // 4. Gabungkan: Taruh pesan pending milik dia sendiri di urutan paling atas!
+  let finalMessages = [...messages];
+  if (pendingMessages.docs.length > 0) {
+     const ownPending = pendingMessages.docs.map(m => ({
+        id: m.id,
+        guestName: String(m.guestName),
+        message: String(m.message),
+        createdAt: String(m.createdAt),
+     }));
+     finalMessages = [...ownPending, ...finalMessages];
+  }
+
+  // 5. Cuci data tamu
+  const cleanGuest = {
+    id: String(rawGuest.id || ''),
+    name: String(rawGuest.name || ''),
+    partnerLabel: rawGuest.partnerLabel ? String(rawGuest.partnerLabel) : '',
+    maxGuests: Number(rawGuest.maxGuests) || 1,
+    invitationType: rawGuest.invitationType === 'group' ? 'group' : 'personal'
+  };
+
+  // 6. Mencegah React Error 441
+  const safeSettings = JSON.parse(JSON.stringify(settings));
+  const safeGallery = JSON.parse(JSON.stringify(gallery));
+  const safeMessages = JSON.parse(JSON.stringify(finalMessages)); // <-- Gunakan pesan gabungan
+  const safeGuest = JSON.parse(JSON.stringify(cleanGuest));
 
   return (
-    <WeddingExperience
-      settings={settings}
-      gallery={gallery}
-      messages={messages}
-      guest={{
-        id: guest.slug ?? '', // dikirim sebagai kolom "guestId" di form
-        name: guest.name,
-        partnerLabel: isGroup
-          ? ''
-          : guest.partnerName
-            ? `& ${guest.partnerName}`
-            : guest.partnerLabel || '',
-        maxGuests: guest.maxGuests,
-        // 'personal' = nama dari data tamu; 'group' = pengunjung mengisi nama sendiri
-        invitationType: isGroup ? 'group' : 'personal',
-    }}
+    <WeddingExperience 
+      settings={safeSettings} 
+      gallery={safeGallery} 
+      messages={safeMessages} 
+      guest={safeGuest} 
     />
-  )
+  );
 }

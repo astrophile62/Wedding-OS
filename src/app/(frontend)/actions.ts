@@ -158,14 +158,14 @@ export async function submitRSVP(
       }
     }
 
+  // ... kode atasnya tetap sama ...
+    
     return {
       success: true,
-      message: wish
-        ? 'Terima kasih. Konfirmasi Anda telah kami terima, dan ucapan akan tampil setelah ditinjau.'
-        : 'Terima kasih. Konfirmasi Anda telah kami terima.',
+      message: 'Terima kasih. Konfirmasi Anda telah Kami terima. Sampai jumpa dan berbahagialah bersama Kami!',
     }
   } catch (error) {
     console.error('submitRSVP gagal:', error)
     return { success: false, message: 'Terjadi kendala. Silakan coba lagi sebentar lagi.' }
-  }
+  }  
 }
