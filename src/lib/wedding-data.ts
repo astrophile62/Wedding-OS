@@ -17,14 +17,14 @@ export async function loadWeddingData() {
       limit: 6,
       overrideAccess: true,
       sort: '-createdAt',
-      where: { status: { equals: 'approved' } },
+      // PERBAIKAN: Sesuaikan dengan status yang ada di CMS
+      where: { status: { equals: 'tampil' } }, // Coba gunakan huruf kecil 'tampil', atau ganti 'Tampil' jika error
     }),
   ])
 
   return {
     settings,
     gallery: gallery.docs,
-    // Hanya field yang perlu ditampilkan, tanpa id tamu atau data RSVP
     messages: messages.docs.map((m) => ({
       id: m.id,
       guestName: m.guestName,
