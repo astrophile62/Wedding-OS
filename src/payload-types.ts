@@ -792,6 +792,17 @@ export interface WeddingSetting {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Foto latar untuk setiap bagian halaman (opsional, blur otomatis).
+   */
+  backgroundImages?: {
+    verse?: (number | null) | Media;
+    bride?: (number | null) | Media;
+    groom?: (number | null) | Media;
+    loveStory?: (number | null) | Media;
+    saveTheDate?: (number | null) | Media;
+    rsvp?: (number | null) | Media;
+  };
   sectionOrder?:
     | {
         label: string;
@@ -864,6 +875,16 @@ export interface WeddingSettingsSelect<T extends boolean = true> {
         accountNumber?: T;
         accountName?: T;
         id?: T;
+      };
+  backgroundImages?:
+    | T
+    | {
+        verse?: T;
+        bride?: T;
+        groom?: T;
+        loveStory?: T;
+        saveTheDate?: T;
+        rsvp?: T;
       };
   sectionOrder?:
     | T
