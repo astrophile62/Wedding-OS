@@ -17,8 +17,8 @@ export async function loadWeddingData() {
       limit: 6,
       overrideAccess: true,
       sort: '-createdAt',
-      // PERBAIKAN: Sesuaikan dengan status yang ada di CMS
-      where: { status: { equals: 'tampil' } }, // Coba gunakan huruf kecil 'tampil', atau ganti 'Tampil' jika error
+      // KEMBALIKAN KE 'approved' karena ini adalah nama enum/value aslinya di database
+      where: { status: { equals: 'approved' } }, 
     }),
   ])
 
