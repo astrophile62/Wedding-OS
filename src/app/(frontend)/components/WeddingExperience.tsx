@@ -98,7 +98,7 @@ function PopUpEffect({ children, delay = 0, isReady = true }: { children: React.
 type Media = { id: string | number; url?: string | null; alt?: string; width?: number | null; height?: number | null }
 type GalleryItem = { id: string | number; role: 'cover' | 'bride' | 'groom' | 'story' | 'gallery'; caption: string; order: number; image: string | number | Media }
 type Settings = { brideName?: string; groomName?: string; hashtag?: string; weddingDate?: string; musicEnabled?: boolean | null; verse?: string; venue?: { name?: string; address?: string; mapsUrl?: string }; people?: { brideFullName?: string; brideParents?: string; groomFullName?: string; groomParents?: string }; loveStory?: { id?: string | null; year: string; title: string; description: string }[] | null; bankAccounts?: { id?: string | null; bank: string; accountNumber: string; accountName: string }[] | null }
-type Message = { id: string | number; guestName: string; message?: string | null }
+type Message = { id: string | number; guestName: string; message?: string | null; createdAt?: string | null }
 type Guest = { id: string | number; name: string; partnerLabel?: string | null; maxGuests?: number | null; invitationType?: 'personal' | 'group' | string | null }
 const initialRSVPState: RSVPState = { success: false, message: '' }
 
@@ -556,6 +556,43 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
             </PopUpEffect>
           </div>
         </section>
+        
+        {/* ================= MEMORY WALL (KUMPULAN UCAPAN) ================= */}
+        {messages.length > 0 && (
+          <section className="relative overflow-hidden bg-charcoal px-6 py-28 snap-start flex flex-col items-center min-h-svh">
+            <PopUpEffect isReady={isOpen}>
+              <SectionTitle kicker="Memory Wall">Harapan & Doa</SectionTitle>
+            </PopUpEffect>
+            
+            <div className="relative w-full max-w-4xl columns-1 gap-6 sm:columns-2 lg:columns-3 mt-8">
+              {messages.map((msg, idx) => (
+                <PopUpEffect key={msg.id} delay={idx * 150} isReady={isOpen}>
+                  <div className="break-inside-avoid mb-6 rounded-2xl border border-ivory/10 bg-ivory/5 p-6 backdrop-blur-sm relative overflow-hidden group hover:bg-ivory/10 transition-colors">
+                    <div className="absolute -right-4 -top-4 opacity-5 text-ivory text-8xl font-serif">"</div>
+                    <p className="text-sm font-light leading-relaxed text-ivory/80 mb-6 italic relative z-10 whitespace-pre-wrap">
+                      "{msg.message}"
+                    </p>
+                    <div className="flex items-center gap-3 relative z-10">
+                      <div className="size-8 rounded-full bg-gold-soft/20 text-gold-soft grid place-items-center font-serif text-sm border border-gold-soft/30">
+                        {msg.guestName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h4 className="text-[0.7rem] font-bold tracking-[0.15em] text-ivory/90 uppercase">
+                          {msg.guestName}
+                        </h4>
+                        {msg.createdAt && (
+                          <span className="text-[0.55rem] font-medium tracking-[0.2em] text-ivory/40 uppercase">
+                            {new Date(msg.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </PopUpEffect>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* 8. WEDDING GIFT */}
         <section className="relative overflow-hidden px-6 py-28 snap-start">
