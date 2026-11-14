@@ -21,11 +21,13 @@ const title = makeSiteSettings.title ?? defaultTitle
 const description =
   makeSiteSettings.description ?? 'Undangan pernikahan Dina & Wira. Mari merangkai cerita bersama.'
 const favicon = makeSiteSettings.icons?.icon
-const socialImage = makeSiteSettings.openGraph?.image
 const googleAnalyticsId = sanitizeHtmlAttribute(makeSiteSettings.analytics?.googleAnalyticsId)
 
+// PERBAIKAN MUTLAK: Paksa WhatsApp membaca link domain asli Abang
+const siteUrl = 'https://dirangkai-cerita-dina.vercel.app'
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(siteUrl),
   title,
   description,
   robots: { follow: false, index: false },
@@ -34,20 +36,26 @@ export const metadata: Metadata = {
     title,
     description,
     type: 'website',
-    images: [{ url: '/og.jpg', width: 1200, height: 630, alt: 'Dina & Wira — #DIRAngkaiCerita' }],
+    // Gunakan link gambar absolut agar WhatsApp tidak nyasar
+    images: [
+      { 
+        url: `${siteUrl}/og.jpg`, 
+        width: 1200, 
+        height: 630, 
+        alt: 'Dina & Wira — #DIRAngkaiCerita' 
+      }
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title,
     description,
-    images: ['/og.jpg'],
+    images: [`${siteUrl}/og.jpg`],
   },
 }
-   // : undefined,
-
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const language = sanitizeHtmlAttribute(makeSiteSettings.language) || 'en'
+  const language = sanitizeHtmlAttribute(makeSiteSettings.language) || 'id'
   const addBypassLinks = makeSiteSettings.accessibility?.addBypassLinks === true
   const customScripts = makeSiteSettings.customScripts
 
