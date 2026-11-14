@@ -102,7 +102,7 @@ type Message = { id: string | number; guestName: string; message?: string | null
 type Guest = { id: string | number; name: string; partnerLabel?: string | null; maxGuests?: number | null; invitationType?: 'personal' | 'group' | string | null }
 const initialRSVPState: RSVPState = { success: false, message: '' }
 
-function Icon({ name, className = 'size-5' }: { name: 'arrow' | 'calendar' | 'check' | 'chevron' | 'copy' | 'gift' | 'location' | 'music' | 'pause' | 'play' | 'x'; className?: string }) {
+function Icon({ name, className = 'size-5' }: { name: 'arrow' | 'calendar' | 'check' | 'chevron' | 'copy' | 'gift' | 'location' | 'music' | 'next' | 'pause' | 'play' | 'x'; className?: string }) {
   const paths = {
     arrow: <path d="M5 12h14M14 7l5 5-5 5" />,
     calendar: <><path d="M6 3v3m12-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" /><path d="M8 13h3v3H8z" /></>,
@@ -112,6 +112,7 @@ function Icon({ name, className = 'size-5' }: { name: 'arrow' | 'calendar' | 'ch
     gift: <><path d="M4 10h16v10H4zM3 7h18v3H3zM12 7v13" /><path d="M12 7c-3-5-7-3-5-1 1 1 3 1 5 1Zm0 0c3-5 7-3 5-1-1 1-3 1-5 1Z" /></>,
     location: <><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></>,
     music: <><path d="M9 18V5l10-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="16" cy="16" r="3" /></>,
+    next: <><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></>, // <--- Tambahkan baris ini
     pause: <path d="M9 6v12M15 6v12" />,
     play: <path d="m9 6 9 6-9 6Z" />,
     x: <path d="m6 6 12 12M18 6 6 18" />,
@@ -182,7 +183,11 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
     setLightboxIndex((i) => (i === null ? i : (i + step + allGalleryPhotos.length) % allGalleryPhotos.length))
   }
 
-  const tracks: MusicTrack[] = useMemo(() => [{ title: 'JKT48 - Rapsodi', url: '/media/JKT48_Rapsodi.mp3' }], [])
+ // Masukkan daftar lagu di sini (pastikan file mp3-nya sudah ditaruh di folder public/media/)
+  const tracks: MusicTrack[] = useMemo(() => [
+    { title: 'JKT48 - Rapsodi', url: '/media/JKT48_Rapsodi.mp3' },
+    // { title: 'Lagu Kedua', url: '/media/Lagu_Kedua.mp3' }, // <--- Tambah lagu baru di sini
+  ], [])
   const player = useMusicPlayer(tracks, { onTrackStart: () => setShowTrack(true) })
 
   useEffect(() => {
@@ -682,10 +687,26 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
 
       {/* ================= MUSIC PLAYER ================= */}
       {player.hasTracks && (
-        <div className="fixed right-5 bottom-5 z-[60] flex items-center gap-3">
-          <button type="button" onClick={() => { player.toggle(); setShowTrack(true); }} className={`grid size-12 place-items-center rounded-full bg-ivory/10 text-ivory backdrop-blur-md border border-ivory/20 transition-all hover:bg-ivory hover:text-charcoal ${player.playing ? 'animate-pulse' : ''}`} aria-label={player.playing ? 'Jeda musik' : 'Putar musik'}>
-            <Icon name={player.playing ? 'pause' : 'play'} className="size-4" />
-          </button>
+        <div className="fixed right-5 bottom-5 z-[60] flex items-center">
+          
+          {/* Pop-up Tulisan (Hanya muncul jika musik belum main dan undangan sudah dibuka) */}
+          {!player.playing && isOpen && (
+             <div className="animate-bounce mr-3 rounded-lg bg-black/40 backdrop-blur-md px-3 py-2 text-[0.6rem] font-bold tracking-[0.2em] text-ivory uppercase border border-ivory/20 shadow-xl relative">
+               Click to play music
+               {/* Segitiga panah ke kanan */}
+               <div className="absolute top-1/2 -right-1.5 w-3 h-3 bg-black/40 border-r border-t border-ivory/20 transform -translate-y-1/2 rotate-45 backdrop-blur-md"></div>
+             </div>
+          )}
+
+          {/* Tombol Play & Next */}
+          <div className="flex bg-black/50 backdrop-blur-md border border-ivory/20 rounded-full p-1 shadow-2xl">
+            <button type="button" onClick={() => { player.toggle(); setShowTrack(true); }} className={`grid size-11 place-items-center rounded-full transition-all ${player.playing ? 'bg-gold-soft text-charcoal shadow-[0_0_15px_rgba(212,175,55,0.5)]' : 'bg-ivory/10 text-ivory hover:bg-ivory hover:text-charcoal'}`} aria-label="Putar musik">
+              <Icon name={player.playing ? 'pause' : 'play'} className="size-4" />
+            </button>
+            <button type="button" onClick={player.nextTrack} className="grid size-11 place-items-center rounded-full text-ivory transition-all hover:bg-ivory/20" aria-label="Lagu selanjutnya">
+              <Icon name="next" className="size-4" />
+            </button>
+          </div>
         </div>
       )}
     </main>
