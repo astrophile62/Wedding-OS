@@ -23,7 +23,6 @@ const description =
 const favicon = makeSiteSettings.icons?.icon
 const googleAnalyticsId = sanitizeHtmlAttribute(makeSiteSettings.analytics?.googleAnalyticsId)
 
-// PERBAIKAN MUTLAK: Paksa WhatsApp membaca link domain asli Abang
 const siteUrl = 'https://dirangkai-cerita-dina.vercel.app'
 
 export const metadata: Metadata = {
@@ -36,21 +35,12 @@ export const metadata: Metadata = {
     title,
     description,
     type: 'website',
-    // Gunakan link gambar absolut agar WhatsApp tidak nyasar
-    images: [
-      { 
-        url: `${siteUrl}/og.jpg`, 
-        width: 1200, 
-        height: 630, 
-        alt: 'Dina & Wira — #DIRAngkaiCerita' 
-      }
-    ],
+    // Next.js akan otomatis menyuntikkan gambar dari file opengraph-image.jpg
   },
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary_large_image', // Tetap paksa format banner besar
     title,
     description,
-    images: [`${siteUrl}/og.jpg`],
   },
 }
 
