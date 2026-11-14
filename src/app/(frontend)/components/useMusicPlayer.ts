@@ -7,6 +7,18 @@ export function useMusicPlayer(tracks: MusicTrack[], options?: { onTrackStart?: 
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
+  const nextTrack = useCallback(() => {
+    if (!audioRef.current || tracks.length === 0) return
+    const nextIndex = (currentTrackIndex + 1) % tracks.length
+    setCurrentTrackIndex(nextIndex)
+    audioRef.current.src = tracks[nextIndex].url
+    if (playing) {
+      audioRef.current.play().then(() => {
+        options?.onTrackStart?.() // Munculkan pop-up judul lagu
+      }).catch(e => console.log(e))
+    }
+  }, [currentTrackIndex, tracks, playing, options])
+
   useEffect(() => {
     if (!audioRef.current && tracks.length > 0) {
       audioRef.current = new Audio(tracks[0].url)
@@ -18,13 +30,13 @@ export function useMusicPlayer(tracks: MusicTrack[], options?: { onTrackStart?: 
         audioRef.current.pause()
       }
     }
-  }, [tracks])
+  }, [tracks, nextTrack])
 
   const play = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.play().then(() => {
         setPlaying(true)
-        options?.onTrackStart?.()
+        options?.onTrackStart?.() // Munculkan pop-up judul lagu saat pertama play
       }).catch(e => console.log("Audio play failed:", e))
     }
   }, [options])
@@ -40,15 +52,12 @@ export function useMusicPlayer(tracks: MusicTrack[], options?: { onTrackStart?: 
     playing ? pause() : play()
   }, [playing, play, pause])
 
-  const nextTrack = useCallback(() => {
-    if (!audioRef.current || tracks.length === 0) return
-    const nextIndex = (currentTrackIndex + 1) % tracks.length
-    setCurrentTrackIndex(nextIndex)
-    audioRef.current.src = tracks[nextIndex].url
-    if (playing) {
-      audioRef.current.play().catch(e => console.log(e))
-    }
-  }, [currentTrackIndex, tracks, playing])
-
-  return { playing, toggle, start: play, nextTrack, hasTracks: tracks.length > 0 }
+  return { 
+    playing, 
+    toggle, 
+    start: play, 
+    nextTrack, 
+    hasTracks: tracks.length > 0,
+    currentTrack: tracks[currentTrackIndex] // Memberitahu UI judul lagu saat ini
+  }
 }

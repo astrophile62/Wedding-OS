@@ -183,12 +183,24 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
     setLightboxIndex((i) => (i === null ? i : (i + step + allGalleryPhotos.length) % allGalleryPhotos.length))
   }
 
- // Masukkan daftar lagu di sini (pastikan file mp3-nya sudah ditaruh di folder public/media/)
+ // Masukkan daftar lagu di sini
   const tracks: MusicTrack[] = useMemo(() => [
     { title: 'JKT48 - Rapsodi', url: '/media/JKT48_Rapsodi.mp3' },
-    // { title: 'Lagu Kedua', url: '/media/Lagu_Kedua.mp3' }, // <--- Tambah lagu baru di sini
+    // { title: 'Lagu Kedua', url: '/media/Lagu_Kedua.mp3' }, // Ganti dengan lagu Abang
   ], [])
-  const player = useMusicPlayer(tracks, { onTrackStart: () => setShowTrack(true) })
+
+  // State untuk mengontrol pop-up judul lagu
+  const [showTrackTitle, setShowTrackTitle] = useState(false)
+  const trackTitleTimer = useRef<NodeJS.Timeout | null>(null)
+
+  const player = useMusicPlayer(tracks, { 
+    onTrackStart: () => { 
+      // Tampilkan pop-up judul lagu selama 4 detik lalu hilangkan
+      setShowTrackTitle(true)
+      if (trackTitleTimer.current) clearTimeout(trackTitleTimer.current)
+      trackTitleTimer.current = setTimeout(() => setShowTrackTitle(false), 4000)
+    } 
+  })
 
   useEffect(() => {
     const initAudio = () => {
@@ -685,22 +697,29 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
         </div>
       )}
 
-      {/* ================= MUSIC PLAYER ================= */}
+          {/* ================= MUSIC PLAYER ================= */}
       {player.hasTracks && (
         <div className="fixed right-5 bottom-5 z-[60] flex items-center">
           
-          {/* Pop-up Tulisan (Hanya muncul jika musik belum main dan undangan sudah dibuka) */}
-          {!player.playing && isOpen && (
+          {/* Notif 1: "Click to play" HANYA DI COVER (!isOpen) dan saat pause */}
+          {!player.playing && !isOpen && (
              <div className="animate-bounce mr-3 rounded-lg bg-black/40 backdrop-blur-md px-3 py-2 text-[0.6rem] font-bold tracking-[0.2em] text-ivory uppercase border border-ivory/20 shadow-xl relative">
                Click to play music
-               {/* Segitiga panah ke kanan */}
                <div className="absolute top-1/2 -right-1.5 w-3 h-3 bg-black/40 border-r border-t border-ivory/20 transform -translate-y-1/2 rotate-45 backdrop-blur-md"></div>
              </div>
           )}
 
+          {/* Notif 2: Judul Lagu (Muncul 4 detik saat awal play atau ganti lagu) */}
+          {player.playing && showTrackTitle && (
+            <div className="animate-in fade-in slide-in-from-right-5 mr-3 rounded-lg bg-black/70 backdrop-blur-md px-4 py-2 text-[0.6rem] font-bold tracking-[0.1em] text-gold-soft uppercase border border-ivory/20 shadow-xl transition-all duration-500">
+               <span className="text-ivory/60 text-[0.5rem] tracking-[0.2em] block mb-0.5">Now Playing</span>
+               {player.currentTrack?.title}
+            </div>
+          )}
+
           {/* Tombol Play & Next */}
           <div className="flex bg-black/50 backdrop-blur-md border border-ivory/20 rounded-full p-1 shadow-2xl">
-            <button type="button" onClick={() => { player.toggle(); setShowTrack(true); }} className={`grid size-11 place-items-center rounded-full transition-all ${player.playing ? 'bg-gold-soft text-charcoal shadow-[0_0_15px_rgba(212,175,55,0.5)]' : 'bg-ivory/10 text-ivory hover:bg-ivory hover:text-charcoal'}`} aria-label="Putar musik">
+            <button type="button" onClick={() => player.toggle()} className={`grid size-11 place-items-center rounded-full transition-all ${player.playing ? 'bg-gold-soft text-charcoal shadow-[0_0_15px_rgba(212,175,55,0.5)]' : 'bg-ivory/10 text-ivory hover:bg-ivory hover:text-charcoal'}`} aria-label="Putar musik">
               <Icon name={player.playing ? 'pause' : 'play'} className="size-4" />
             </button>
             <button type="button" onClick={player.nextTrack} className="grid size-11 place-items-center rounded-full text-ivory transition-all hover:bg-ivory/20" aria-label="Lagu selanjutnya">
