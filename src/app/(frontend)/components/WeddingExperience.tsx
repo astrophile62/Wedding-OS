@@ -186,7 +186,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
  // Masukkan daftar lagu di sini
   const tracks: MusicTrack[] = useMemo(() => [
     { title: 'JKT48 - Rapsodi', url: '/media/JKT48_Rapsodi.mp3' },
-    // { title: 'Lagu Kedua', url: '/media/Lagu_Kedua.mp3' }, // Ganti dengan lagu Abang
+    { title: 'Lagu Kedua', url: '/media/Lagu_Kedua.mp3' }, // Ganti dengan lagu Abang
   ], [])
 
   // State untuk mengontrol pop-up judul lagu
