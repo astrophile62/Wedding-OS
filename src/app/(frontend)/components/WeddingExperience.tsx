@@ -161,7 +161,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
   }))
 
   // FOTO ENGAGEMENT
-  const engagementPhotos = [27,37,74,79,81,82,84,92,99,102,110,111,120,372,375,377,386,387,393,397,411,413,419,428,430,438,443,449,451,457].map(n => ({
+  const engagementPhotos = [27,37,74,81,82,84,92,99,102,110,111,120,372,375,377,386,387,393,397,411,413,419,428,430,438,443,449,451,457].map(n => ({
     id: `e-${n}`, url: `/media/Copy of ARG-${n}.JPG`, alt: `Engagement ${n}`
   }))
 
