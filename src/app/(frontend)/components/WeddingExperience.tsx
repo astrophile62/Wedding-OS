@@ -202,22 +202,27 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
     } 
   })
 
+  // Gunakan ref agar sensor sentuhan/scroll HANYA BEKERJA 1 KALI seumur hidup halaman
+  const hasInteracted = useRef(false)
+
   useEffect(() => {
     const initAudio = () => {
-      if (!player.playing) player.start()
-      document.removeEventListener('click', initAudio)
-      document.removeEventListener('touchstart', initAudio)
-      document.removeEventListener('scroll', initAudio)
+      if (hasInteracted.current) return
+      hasInteracted.current = true
+      player.start()
     }
+    
     document.addEventListener('click', initAudio, { once: true })
     document.addEventListener('touchstart', initAudio, { once: true })
     document.addEventListener('scroll', initAudio, { once: true })
+    
     return () => {
       document.removeEventListener('click', initAudio)
       document.removeEventListener('touchstart', initAudio)
       document.removeEventListener('scroll', initAudio)
     }
-  }, [player])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // <--- KUNCI UTAMANYA DI SINI: Array kosong agar tidak dipanggil ulang terus
 
   const eventDate = new Date(settings.weddingDate || '2026-12-26T01:00:00.000Z')
   const dateParts = (options: Intl.DateTimeFormatOptions) => Object.fromEntries(new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', ...options }).formatToParts(eventDate).map((part): [string, string] => [part.type, part.value]))

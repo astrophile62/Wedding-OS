@@ -7,20 +7,46 @@ export function useMusicPlayer(tracks: MusicTrack[], options?: { onTrackStart?: 
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const optionsRef = useRef(options)
+  
+  // Ref untuk mengingat apakah musik sedang diputar sebelum tab ditinggalkan
+  const wasPlayingRef = useRef(false) 
 
-  // 1. Amankan opsi tambahan (seperti pop-up judul) agar tidak memicu re-render
   useEffect(() => {
     optionsRef.current = options
   }, [options])
 
-  // 2. Buat mesin audionya SEKALI SAJA saat web pertama kali dibuka
   useEffect(() => {
     if (!audioRef.current && tracks.length > 0) {
       audioRef.current = new Audio(tracks[0].url)
     }
   }, [tracks])
 
-  // 3. Fungsi pindah lagu yang aman dari jebakan re-render
+  // FITUR BARU: Pause otomatis saat pindah tab / minimize browser
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!audioRef.current) return
+      
+      if (document.hidden) {
+        // Tab disembunyikan: catat status terakhir dan pause
+        wasPlayingRef.current = !audioRef.current.paused
+        if (wasPlayingRef.current) {
+          audioRef.current.pause()
+          setPlaying(false)
+        }
+      } else {
+        // Tab dibuka kembali: jika sebelumnya play, lanjutkan
+        if (wasPlayingRef.current) {
+          audioRef.current.play()
+            .then(() => setPlaying(true))
+            .catch(e => console.error("Resume gagal:", e))
+        }
+      }
+    }
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange)
+  }, [])
+
   const nextTrack = useCallback(() => {
     if (!audioRef.current || tracks.length === 0) return
     
@@ -28,7 +54,6 @@ export function useMusicPlayer(tracks: MusicTrack[], options?: { onTrackStart?: 
       const nextIdx = (prev + 1) % tracks.length
       audioRef.current!.src = tracks[nextIdx].url
       
-      // Jika saat ganti lagu kondisinya sedang diputar, langsung putar lagu barunya
       setPlaying((isPlaying) => {
         if (isPlaying) {
           audioRef.current!.play()
@@ -42,7 +67,6 @@ export function useMusicPlayer(tracks: MusicTrack[], options?: { onTrackStart?: 
     })
   }, [tracks])
 
-  // 4. Otomatis ganti lagu kalau lagu sebelumnya habis (ended)
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
@@ -56,14 +80,16 @@ export function useMusicPlayer(tracks: MusicTrack[], options?: { onTrackStart?: 
     if (!audioRef.current) return
     audioRef.current.play().then(() => {
       setPlaying(true)
-      optionsRef.current?.onTrackStart?.() // Panggil pop-up judul lagu
-    }).catch(e => console.error("Play gagal (mungkin diblokir browser):", e))
+      wasPlayingRef.current = true
+      optionsRef.current?.onTrackStart?.() 
+    }).catch(e => console.error("Play gagal:", e))
   }, [])
 
   const pause = useCallback(() => {
     if (!audioRef.current) return
     audioRef.current.pause()
     setPlaying(false)
+    wasPlayingRef.current = false // Reset agar tidak jalan sendiri
   }, [])
 
   const toggle = useCallback(() => {
