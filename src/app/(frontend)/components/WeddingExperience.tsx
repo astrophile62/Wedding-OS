@@ -154,14 +154,13 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
     story: gallery.filter((item) => item.role === 'story'),
   }), [gallery])
 
-  // FOTO PRE-WEDDING (Ditampilkan lebih dulu)
-  // Fix 02000 ekstensinya .JPEG besar karena Vercel Case-Sensitive
-  const preWeddingPhotos = ['01728','01763','01773','01789','01797','01799','01811','01846','01860','01888','01941','01952','01954','02000','02019','02031','02061','02074','02078','02105'].map(n => ({
+  /// FOTO PRE-WEDDING (MLJ02019.jpeg sudah dihapus)
+  const preWeddingPhotos = ['01728','01763','01773','01789','01797','01799','01811','01846','01860','01888','01941','01952','01954','02000','02031','02061','02074','02078','02105'].map(n => ({
     id: `p-${n}`, url: `/media/MLJ${n}.${n === '02000' ? 'JPEG' : 'jpeg'}`, alt: `Pre-Wedding ${n}`
   }))
 
-  // FOTO ENGAGEMENT
-  const engagementPhotos = [27,37,74,81,82,84,92,99,102,110,111,120,372,375,377,386,387,393,397,411,413,419,428,430,438,443,449,451,457].map(n => ({
+  // FOTO ENGAGEMENT (Ditambahkan semua sesuai folder public/media terbaru, tanpa ARG-79)
+  const engagementPhotos = [27, 35, 37, 40, 52, 71, 74, 78, 81, 82, 84, 92, 99, 102, 108, 110, 111, 120, 126, 235, 240, 241, 285, 287, 321, 352, 372, 375, 377, 382, 386, 387, 392, 393, 394, 397, 402, 411, 413, 419, 428, 430, 438, 443, 445, 449, 451, 457, 464, 500, 501, 502, 503, 504, 505].map(n => ({
     id: `e-${n}`, url: `/media/Copy of ARG-${n}.JPG`, alt: `Engagement ${n}`
   }))
 
@@ -185,8 +184,9 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
 
  // Masukkan daftar lagu di sini
   const tracks: MusicTrack[] = useMemo(() => [
-    { title: 'JKT48 - Rapsodi', url: '/media/JKT48_Rapsodi.mp3' },
-    { title: 'The Adams - Hanya Kau', url: '/media/The_Adams_Hanya_Kau.mp3' }, // Ganti dengan lagu Abang
+    { title: 'Matthew Ifield (Cover) - I Think They Call This Love', url: '/media/I_Think_They_Call_This_Love_Matthew_Ifield_(Cover).mp3' },
+    { title: 'Tiara Andini ft. Arsy - Pernikahan Kita', url: '/media/Pernikahan_Kita_Tiara_Andini_feat_Arsy_Widianto.mp3' },
+    { title: 'Eddie Tom (Cover) - You are Still The One', url: '/media/You_are_Still_The_One_Eddie_Tom_(Cover).mp3' },
   ], [])
 
   // State untuk mengontrol pop-up judul lagu
