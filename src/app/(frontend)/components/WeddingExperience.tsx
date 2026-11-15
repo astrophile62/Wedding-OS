@@ -160,7 +160,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
   }))
 
   // FOTO ENGAGEMENT (Ditambahkan semua sesuai folder public/media terbaru, tanpa ARG-79)
-  const engagementPhotos = [27, 35, 37, 40, 52, 71, 74, 78, 81, 82, 84, 92, 99, 102, 108, 110, 111, 120, 126, 235, 240, 241, 285, 287, 321, 352, 372, 375, 377, 382, 386, 387, 392, 393, 394, 397, 402, 411, 413, 419, 428, 430, 438, 443, 445, 449, 451, 457, 464, 500, 501, 502, 503, 504, 505].map(n => ({
+  const engagementPhotos = [27, 35, 40, 52, 71, 74, 78, 81, 92, 102, 108, 110, 111, 120, 126, 232, 233, 234, 235, 240, 285, 287, 321, 352, 372, 375, 382, 386, 392, 394, 397, 402, 411, 413, 419, 428, 430, 443, 445, 449, 457, 464, 500, 501, 502, 503, 504, 505].map(n => ({
     id: `e-${n}`, url: `/media/Copy of ARG-${n}.JPG`, alt: `Engagement ${n}`
   }))
 
