@@ -73,11 +73,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             />
             <Script id="figma-google-analytics" strategy="afterInteractive">
               {`
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', ${JSON.stringify(googleAnalyticsId)});
-`}
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', ${JSON.stringify(googleAnalyticsId)});
+              `}
             </Script>
           </>
         )}
