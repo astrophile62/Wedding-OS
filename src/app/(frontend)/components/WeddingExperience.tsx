@@ -299,7 +299,7 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
           <div className="w-full max-w-sm mb-10">
             <p className="mb-6 text-xs leading-relaxed text-ivory/70 font-medium tracking-widest uppercase">
               Yth. Bapak/Ibu/Saudara/i
-              <strong className="mt-2 block font-serif text-xl font-normal text-ivory capitalize tracking-normal">{guest?.name || 'Tamu Undangan'} {guest?.partnerLabel}</strong>
+              
             <strong className="mt-2 block font-serif text-xl font-normal text-ivory capitalize tracking-normal">
                 {guest?.name || 'Tamu Undangan'} {guest?.invitationType === 'group' ? '' : guest?.partnerLabel}
               </strong></p>
