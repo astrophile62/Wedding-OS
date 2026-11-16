@@ -300,7 +300,9 @@ export default function WeddingExperience({ settings, gallery, messages, guest }
             <p className="mb-6 text-xs leading-relaxed text-ivory/70 font-medium tracking-widest uppercase">
               Yth. Bapak/Ibu/Saudara/i
               <strong className="mt-2 block font-serif text-xl font-normal text-ivory capitalize tracking-normal">{guest?.name || 'Tamu Undangan'} {guest?.partnerLabel}</strong>
-            </p>
+            <strong className="mt-2 block font-serif text-xl font-normal text-ivory capitalize tracking-normal">
+                {guest?.name || 'Tamu Undangan'} {guest?.invitationType === 'group' ? '' : guest?.partnerLabel}
+              </strong></p>
             <button type="button" onClick={openInvitation} className="group flex mx-auto h-12 w-48 items-center justify-center gap-3 rounded-full bg-transparent border border-ivory/50 text-[0.65rem] font-bold tracking-[0.2em] text-ivory uppercase transition-all duration-500 hover:bg-ivory hover:text-charcoal active:scale-95 backdrop-blur-sm">
               Buka Undangan
             </button>
